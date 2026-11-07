@@ -1,0 +1,52 @@
+[graph]
+all-features = false
+no-default-features = false
+
+[output]
+feature-depth = 1
+
+[advisories]
+# Avisos de seguridad que decidas ignorar (con motivo)
+ignore = []
+
+[licenses]
+allow = [
+    "MIT",
+    "Apache-2.0",
+    "Apache-2.0 WITH LLVM-exception",
+    "BSD-2-Clause",
+    "BSD-3-Clause",
+    "ISC",
+    "Zlib",
+    "Unicode-3.0",
+    "CC0-1.0",
+    "Unlicense",
+    # Copyleft débil: descomenta solo si decides aceptarlo
+    # "MPL-2.0",
+]
+confidence-threshold = 0.8
+
+# Tu propio crate también se revisa: sin esta excepción, tu licencia fallaría.
+# Cambia "netdrop-rs" por el nombre real que pongas en Cargo.toml.
+exceptions = [
+    { allow = ["PolyForm-Noncommercial-1.0.0"], crate = "netdrop-rs" },
+]
+
+[licenses.private]
+ignore = false
+registries = []
+
+[bans]
+multiple-versions = "warn"
+wildcards = "allow"
+highlight = "all"
+allow = []
+deny = []
+skip = []
+skip-tree = []
+
+[sources]
+unknown-registry = "deny"
+unknown-git = "deny"
+allow-registry = ["https://github.com/rust-lang/crates.io-index"]
+allow-git = []

@@ -33,3 +33,10 @@ Desde el navegador puedes subir, ver, descargar y eliminar archivos
 - [ ] Ajustes y tema
 - [ ] HTTPS
 - [ ] Empaquetado para Linux y Windows
+
+## Licencia
+
+Este proyecto se distribuye bajo la licencia **PolyForm Noncommercial 1.0.0**.
+
+- [Texto oficial (inglés)](LICENSE)
+- [Traducción al español, no oficial](LICENSE.es.md)
