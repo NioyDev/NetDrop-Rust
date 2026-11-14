@@ -1,5 +1,5 @@
 use axum::body::Body;
-use axum::extract::{Multipart, Path as AxPath, State};
+use axum::extract::{DefaultBodyLimit, Multipart, Path as AxPath, State};
 use axum::http::header::{
     ACCEPT_RANGES, CACHE_CONTROL, CONTENT_DISPOSITION, CONTENT_LENGTH, CONTENT_RANGE, CONTENT_TYPE,
     LOCATION,
@@ -401,40 +401,49 @@ pub async fn upload_chunk(mut multipart: Multipart) -> impl IntoResponse {
     let mut total_size_str = String::new();
     let mut raw_upload_id = String::new();
 
-    while let Ok(Some(field)) = multipart.next_field().await {
-        let name = field.name().unwrap_or("").to_string();
-        match name.as_str() {
-            "file_chunk" | "UPFile" => {
-                if let Ok(bytes) = field.bytes().await {
-                    chunk_bytes = Some(bytes.to_vec());
+    loop {
+        match multipart.next_field().await {
+            Ok(Some(field)) => {
+                let name = field.name().unwrap_or("").to_string();
+                match name.as_str() {
+                    "file_chunk" | "UPFile" => {
+                        if let Ok(bytes) = field.bytes().await {
+                            chunk_bytes = Some(bytes.to_vec());
+                        }
+                    }
+                    "filename" => {
+                        if let Ok(text) = field.text().await {
+                            original_name = text;
+                        }
+                    }
+                    "chunk_index" => {
+                        if let Ok(text) = field.text().await {
+                            chunk_index_str = text;
+                        }
+                    }
+                    "total_chunks" => {
+                        if let Ok(text) = field.text().await {
+                            total_chunks_str = text;
+                        }
+                    }
+                    "total_size" => {
+                        if let Ok(text) = field.text().await {
+                            total_size_str = text;
+                        }
+                    }
+                    "upload_id" => {
+                        if let Ok(text) = field.text().await {
+                            raw_upload_id = text;
+                        }
+                    }
+                    _ => {}
                 }
             }
-            "filename" => {
-                if let Ok(text) = field.text().await {
-                    original_name = text;
-                }
+            Ok(None) => break,
+            Err(e) => {
+                error!("Error leyendo campo multipart en upload_chunk: {e}");
+                break;
             }
-            "chunk_index" => {
-                if let Ok(text) = field.text().await {
-                    chunk_index_str = text;
-                }
-            }
-            "total_chunks" => {
-                if let Ok(text) = field.text().await {
-                    total_chunks_str = text;
-                }
-            }
-            "total_size" => {
-                if let Ok(text) = field.text().await {
-                    total_size_str = text;
-                }
-            }
-            "upload_id" => {
-                if let Ok(text) = field.text().await {
-                    raw_upload_id = text;
-                }
-            }
-            _ => {}
         }
     }
 
@@ -872,6 +881,7 @@ pub fn crear_router(app_state: Arc<AppState>) -> Router {
         .route("/qr-image", get(qr_image))
         .route("/qr", get(qr))
         .route("/static/*path", get(static_handler))
+        .layer(DefaultBodyLimit::max(MAX_FILE_SIZE as usize))
         .layer(middleware::from_fn(add_cache_headers))
         .layer(CompressionLayer::new())
         .layer(TraceLayer::new_for_http())
