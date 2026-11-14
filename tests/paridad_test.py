@@ -19,8 +19,22 @@ import tempfile
 import time
 import requests
 
-RUST_BIN = r"C:\Users\migue\.cargo-target\netdrop-rust\debug\netdrop.exe"
-PYTHON_APP_DIR = r"C:\Users\migue\NetDrop-original"
+_BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+_TARGET_DIR = os.environ.get("CARGO_TARGET_DIR", os.path.join(_BASE_DIR, "target"))
+
+RUST_BIN = os.environ.get(
+    "RUST_BIN",
+    os.path.join(_TARGET_DIR, "debug", "netdrop.exe" if os.name == "nt" else "netdrop")
+)
+if not os.path.exists(RUST_BIN):
+    alt_bin = os.path.join(_TARGET_DIR, "release", "netdrop.exe" if os.name == "nt" else "netdrop")
+    if os.path.exists(alt_bin):
+        RUST_BIN = alt_bin
+
+PYTHON_APP_DIR = os.environ.get(
+    "PYTHON_APP_DIR",
+    os.path.abspath(os.path.join(_BASE_DIR, "..", "NetDrop-original"))
+)
 
 RUST_PORT = 5000
 PYTHON_PORT = 5001

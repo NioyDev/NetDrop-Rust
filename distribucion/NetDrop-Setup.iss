@@ -1,7 +1,7 @@
 ; Script de Inno Setup para NetDrop-Rust
 #define MyAppName "NetDrop-Rust"
 #ifndef MyAppVersion
-  #define MyAppVersion "2.1.2"
+  #define MyAppVersion "0.1.0"
 #endif
 #define MyAppPublisher "NioyDev"
 #define MyAppURL "https://github.com/NioyDev/NetDrop-Rust"
@@ -28,7 +28,8 @@ SolidCompression=yes
 WizardStyle=modern
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
-PrivilegesRequiredOverridesAllowed=dialog
+PrivilegesRequired=lowest
+PrivilegesRequiredOverridesAllowed=dialog commandline
 UninstallDisplayIcon={app}\{#MyAppExeName}
 CloseApplications=yes
 

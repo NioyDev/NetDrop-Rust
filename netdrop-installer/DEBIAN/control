@@ -1,5 +1,5 @@
 Package: netdrop-rust
-Version: 2.1.2
+Version: 0.1.0
 Section: utils
 Priority: optional
 Architecture: amd64

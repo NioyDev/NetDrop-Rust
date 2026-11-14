@@ -1,6 +1,6 @@
 [package]
 name = "netdrop"
-version = "2.1.2"
+version = "0.1.0"
 edition = "2021"
 default-run = "netdrop"
 authors = ["Nioy <https://github.com/NioyDev>"]
@@ -69,9 +69,11 @@ required-features = ["launcher"]
 
 [profile.dev]
 debug = 0
+incremental = false
 
 [profile.test]
 debug = 0
+incremental = false
 
 [profile.release]
 opt-level = 3
