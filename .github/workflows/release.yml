@@ -1,4 +1,4 @@
-name: Release (Linux & Windows)
+name: Release
 
 on:
   push:
@@ -11,7 +11,7 @@ permissions:
 
 jobs:
   build-windows:
-    name: Compilar Windows (Portable, Setup & Zip)
+    name: Compilar Windows (Portable Zip & Inno Setup)
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
@@ -19,33 +19,35 @@ jobs:
       - uses: Swatinem/rust-cache@v2
 
       - name: Compilar binario en Release
-        run: cargo build --release --locked
+        run: cargo build --release --bin netdrop
 
       - name: Instalar Inno Setup
         run: choco install innosetup -y
 
-      - name: Crear Instalador Inno Setup
-        run: |
-          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" distribucion/NetDrop-Setup.iss
-
-      - name: Preparar artefactos Windows
-        shell: powershell
+      - name: Crear Instalador Inno Setup (NetDrop-Rust-Setup.exe)
         run: |
           New-Item -ItemType Directory -Force -Path dist
-          Copy-Item target/release/netdrop.exe dist/NetDrop-Windows-Portable.exe
-          Compress-Archive -Path target/release/netdrop.exe, LICENSE.txt, README.md -DestinationPath dist/NetDrop-Windows-x64.zip -Force
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" distribucion/NetDrop-Setup.iss
+
+      - name: Preparar ZIP Portable (NetDrop-Rust-Windows-x64.zip)
+        shell: powershell
+        run: |
+          New-Item -ItemType Directory -Force -Path dist/zip_content
+          Copy-Item target/release/netdrop.exe dist/zip_content/
+          Copy-Item LICENSE dist/zip_content/
+          Copy-Item README.md dist/zip_content/
+          Compress-Archive -Path dist/zip_content/* -DestinationPath dist/NetDrop-Rust-Windows-x64.zip -Force
 
       - name: Subir artefactos Windows
         uses: actions/upload-artifact@v4
         with:
           name: windows-artifacts
           path: |
-            dist/NetDrop-Windows-Portable.exe
-            dist/NetDrop-Setup.exe
-            dist/NetDrop-Windows-x64.zip
+            dist/NetDrop-Rust-Setup.exe
+            dist/NetDrop-Rust-Windows-x64.zip
 
   build-linux:
-    name: Compilar Linux (.deb & .zip)
+    name: Compilar Linux (.tar.gz & .deb)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -57,31 +59,32 @@ jobs:
       - uses: Swatinem/rust-cache@v2
 
       - name: Compilar binario en Release
-        run: cargo build --release --locked
+        run: cargo build --release --bin netdrop
 
       - name: Instalar cargo-deb
-        run: cargo install cargo-deb || true
+        run: cargo install cargo-deb --locked
 
-      - name: Construir paquete .deb
+      - name: Construir paquete .deb (netdrop-rust_amd64.deb)
         run: |
           mkdir -p dist
-          cargo deb -p netdrop -o dist/netdrop-installer.deb || true
+          cargo deb -p netdrop -o dist/netdrop-rust_amd64.deb
 
-      - name: Empaquetar Linux .zip
+      - name: Empaquetar Linux Tarball (NetDrop-Rust-Linux-x64.tar.gz)
         run: |
-          mkdir -p dist/netdrop-linux
-          cp target/release/netdrop dist/netdrop-linux/
-          cp LICENSE.txt dist/netdrop-linux/
-          cp README.md dist/netdrop-linux/
-          cd dist && zip -r NetDrop-Linux-x64.zip netdrop-linux/
+          mkdir -p dist/tar_content
+          cp target/release/netdrop dist/tar_content/
+          cp LICENSE dist/tar_content/
+          cp README.md dist/tar_content/
+          cp distribucion/NetDrop.desktop dist/tar_content/
+          tar -czvf dist/NetDrop-Rust-Linux-x64.tar.gz -C dist/tar_content .
 
       - name: Subir artefactos Linux
         uses: actions/upload-artifact@v4
         with:
           name: linux-artifacts
           path: |
-            dist/NetDrop-Linux-x64.zip
-            dist/*.deb
+            dist/NetDrop-Rust-Linux-x64.tar.gz
+            dist/netdrop-rust_amd64.deb
 
   publish-release:
     name: Publicar GitHub Release Unificada
@@ -106,7 +109,8 @@ jobs:
       - name: Publicar Release en GitHub
         uses: softprops/action-gh-release@v2
         with:
-          name: NetDrop Release ${{ github.ref_name }}
+          name: NetDrop-Rust ${{ github.ref_name }}
           draft: false
           prerelease: false
           files: release-assets/*
+          generate_release_notes: true

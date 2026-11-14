@@ -1,0 +1,7 @@
+Package: netdrop-rust
+Version: 2.1.2
+Section: utils
+Priority: optional
+Architecture: amd64
+Maintainer: NioyDev
+Description: Transferencia de archivos ultraligera en red local reescrita en Rust.

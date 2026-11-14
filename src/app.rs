@@ -2,10 +2,11 @@ use axum::body::Body;
 use axum::extract::{Multipart, Path as AxPath, State};
 use axum::http::header::{
     ACCEPT_RANGES, CACHE_CONTROL, CONTENT_DISPOSITION, CONTENT_LENGTH, CONTENT_RANGE, CONTENT_TYPE,
+    LOCATION,
 };
-use axum::http::{HeaderMap, HeaderValue, Request, Response, StatusCode};
+use axum::http::{HeaderMap, HeaderValue, Request, StatusCode};
 use axum::middleware::{self, Next};
-use axum::response::{Html, IntoResponse, Json, Redirect};
+use axum::response::{Html, IntoResponse, Json, Response};
 use axum::routing::{get, post};
 use axum::Router;
 use rust_embed::RustEmbed;
@@ -300,8 +301,7 @@ pub async fn api_theme_post(
     let _ = save_json_atomic(&target_path, &payload).await;
 
     Json(json!({
-        "ok": true,
-        "theme": payload
+        "ok": true
     }))
 }
 
@@ -314,6 +314,15 @@ pub fn archivo_demasiado_grande() -> impl IntoResponse {
             "error": "El archivo supera el límite permitido"
         })),
     )
+}
+
+#[inline]
+fn redirect_302(location: &str) -> Response {
+    Response::builder()
+        .status(StatusCode::FOUND)
+        .header(LOCATION, location)
+        .body(Body::empty())
+        .unwrap()
 }
 
 // Equivale a upload de app.py
@@ -329,12 +338,12 @@ pub async fn upload(mut multipart: Multipart) -> impl IntoResponse {
 
         let raw_filename = field.file_name().unwrap_or("").to_string();
         if raw_filename.is_empty() {
-            return Redirect::to("/update").into_response();
+            return redirect_302("/update");
         }
 
         let filename = crate::funciones::configuracion::secure_filename(&raw_filename);
         if filename.is_empty() || !allowed_file(&filename) {
-            return Redirect::to("/update").into_response();
+            return redirect_302("/update");
         }
 
         let file_path = destino_dir.join(&filename);
@@ -346,7 +355,7 @@ pub async fn upload(mut multipart: Multipart) -> impl IntoResponse {
             .await
         {
             Ok(file) => file,
-            Err(_) => return Redirect::to("/update").into_response(),
+            Err(_) => return redirect_302("/update"),
         };
 
         let mut total_written: u64 = 0;
@@ -369,14 +378,14 @@ pub async fn upload(mut multipart: Multipart) -> impl IntoResponse {
 
         if error_ocurrido {
             let _ = fs::remove_file(&file_path).await;
-            return Redirect::to("/update").into_response();
+            return redirect_302("/update");
         }
 
         info!("✓ Archivo subido exitosamente: {filename} ({total_written} bytes)");
-        return Redirect::to("/").into_response();
+        return redirect_302("/");
     }
 
-    Redirect::to("/update").into_response()
+    redirect_302("/update")
 }
 
 // Equivale a upload_chunk de app.py
@@ -617,23 +626,23 @@ pub async fn archivo(
 pub async fn descarga(AxPath(raw_filename): AxPath<String>) -> impl IntoResponse {
     let filename = crate::funciones::configuracion::secure_filename(&raw_filename);
     if filename.is_empty() {
-        return Redirect::to("/").into_response();
+        return redirect_302("/");
     }
 
     let file_path = upload_dir().join(&filename);
     if !file_path.exists() {
-        return Redirect::to("/").into_response();
+        return redirect_302("/");
     }
 
     let meta = match tokio::fs::metadata(&file_path).await {
         Ok(m) => m,
-        Err(_) => return Redirect::to("/").into_response(),
+        Err(_) => return redirect_302("/"),
     };
     let total_size = meta.len();
 
     let file = match File::open(&file_path).await {
         Ok(f) => f,
-        Err(_) => return Redirect::to("/").into_response(),
+        Err(_) => return redirect_302("/"),
     };
 
     let mime_type = mime_guess::from_path(&filename)
@@ -651,7 +660,7 @@ pub async fn descarga(AxPath(raw_filename): AxPath<String>) -> impl IntoResponse
         .header(CONTENT_DISPOSITION, disposition)
         .header(CONTENT_LENGTH, total_size.to_string())
         .body(body)
-        .unwrap_or_else(|_| Redirect::to("/").into_response())
+        .unwrap_or_else(|_| redirect_302("/"))
 }
 
 // Equivale a eliminar de app.py
@@ -664,7 +673,7 @@ pub async fn eliminar(AxPath(raw_filename): AxPath<String>) -> impl IntoResponse
             info!("🗑️ Archivo eliminado: {filename}");
         }
     }
-    Redirect::to("/")
+    redirect_302("/")
 }
 
 // Equivale a update de app.py
@@ -748,7 +757,7 @@ pub async fn qr() -> impl IntoResponse {
     if let Err(e) = generar_qr() {
         error!("Error regenerando código QR: {e}");
     }
-    Redirect::to("/qrgenerator")
+    redirect_302("/qrgenerator")
 }
 
 pub async fn save_json_atomic<T: Serialize>(path: &Path, data: &T) -> Result<(), std::io::Error> {

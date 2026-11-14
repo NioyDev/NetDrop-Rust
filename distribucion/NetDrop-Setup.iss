@@ -1,11 +1,14 @@
-; Script de Inno Setup para NetDropRS (Rust)
-#define MyAppName "NetDropRS"
+; Script de Inno Setup para NetDrop-Rust
+#define MyAppName "NetDrop-Rust"
 #ifndef MyAppVersion
   #define MyAppVersion "2.1.2"
 #endif
 #define MyAppPublisher "NioyDev"
 #define MyAppURL "https://github.com/NioyDev/NetDrop-Rust"
-#define MyAppExeName "NetDropRS.exe"
+#define MyAppExeName "netdrop.exe"
+#ifndef BinDir
+  #define BinDir "..\target\release"
+#endif
 
 [Setup]
 AppId={{D1A3F78E-9214-4B28-8B77-4C0A2E2F59D1}
@@ -18,7 +21,7 @@ AppUpdatesURL={#MyAppURL}
 DefaultDirName={autopf}\{#MyAppName}
 DisableProgramGroupPage=yes
 OutputDir=..\dist
-OutputBaseFilename=NetDropRS-Setup
+OutputBaseFilename=NetDrop-Rust-Setup
 SetupIconFile=..\static\Logo\Logo.ico
 Compression=lzma2/ultra64
 SolidCompression=yes
@@ -36,8 +39,8 @@ Name: "spanish"; MessagesFile: "compiler:Languages\Spanish.isl"
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
 
 [Files]
-Source: "..\target\release\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
-Source: "..\LICENSE.txt"; DestDir: "{app}"; Flags: ignoreversion
+Source: "{#BinDir}\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\LICENSE"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\README.md"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]

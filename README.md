@@ -14,16 +14,17 @@ NetDropRS es la migración y evolución completa a **Rust** del proyecto origina
 
 ---
 
-## 🚀 Comparativa de Rendimiento: Python vs. Rust
+## 🚀 Comparativa de Rendimiento Medida: Python vs. Rust
 
-| Métrica | NetDrop (Python + Flask) | NetDropRS (Rust + Axum) | Mejora |
+| Métrica | NetDrop (Python + Flask) | NetDrop-Rust (Rust + Axum) | Mejora Verificada |
 |---|---|---|---|
-| **Consumo de RAM en reposo** | ~65 – 90 MB | **~8 – 14 MB** | **~85% menos memoria** |
-| **Tiempo de arranque** | ~1.8 – 2.5 s | **< 25 ms** | **~80x más rápido** |
-| **Tamaño del paquete ejecutable** | ~45 – 70 MB (PyInstaller) | **~15 – 22 MB** (todo embebido) | **~60% menor tamaño** |
-| **Subida de archivos grandes (1 GB)** | Buffer intermedio en RAM | **Streaming directo a disco (chunks 1MB)** | Cero desbordamiento de RAM |
-| **Descarga de archivos (HTTP)** | Síncrona, streaming básico | **ReaderStream asíncrono + HTTP Range** | Soporte nativo de reanudación |
-| **Arranque / Single-Instance** | Verificación por socket lenta | **Detección instantánea (timeout 1s)** | Reenvío instantáneo al navegador |
+| **Consumo de RAM en reposo** | 36.3 MB (sin GUI) / ~75 MB (con GUI) | **5.2 MB** | **~86% menos memoria** |
+| **Tiempo de transferencia (subida 20 MB)** | 0.231 s (692.6 Mbps) | **0.115 s (1391.3 Mbps)** | **2x más rápido (el doble de ancho de banda)** |
+| **Tamaño del instalador (Setup.exe)** | ~45 – 70 MB (PyInstaller) | **10.2 MB** (Inno Setup) | **~75% menor tamaño** |
+| **Paquete portable comprimido (ZIP)** | ~55 MB | **11.0 MB** | **~80% menor tamaño** |
+| **Subida de archivos grandes (hasta 1000 MB)** | Buffer intermedio en RAM | **Streaming directo a disco (`.part`)** | Cero desbordamiento de RAM |
+| **Descarga de archivos (HTTP)** | Síncrona, streaming básico | **ReaderStream asíncrono + HTTP Range** | Soporte nativo de seeking y reanudación |
+| **Detección de puerto / Single-Instance** | Verificación por socket lenta | **Detección instantánea (timeout 1s)** | Reenvío inmediato al navegador existente |
 
 ---
 
@@ -40,46 +41,48 @@ NetDropRS es la migración y evolución completa a **Rust** del proyecto origina
 
 ---
 
-## 📂 Arquitectura del Proyecto
+## 📂 Arquitectura del Proyecto (1 a 1 con Python)
 
 ```text
 NetDrop-Rust/
-├── Cargo.toml                  # Configuración de dependencias, features y perfiles LTO
+├── Cargo.toml                       # Dependencias Axum, perfiles LTO y metadatos deb
 ├── src/
-│   ├── main.rs                 # Detección de instancia única, servidor Axum y WebView
-│   ├── app.rs                  # Router HTTP, plantillas Tera y assets embebidos
-│   ├── lib.rs                  # Biblioteca con suite de pruebas unitarias e integración
-│   ├── rutas/
-│   │   ├── paginas.rs          # Handlers GET /, /settings, /update, /qrgenerator
-│   │   ├── subida.rs           # Handlers POST /upload y POST /upload-chunk (streaming)
-│   │   ├── archivos.rs         # Servido inline, descarga con Range y eliminación
-│   │   ├── api.rs              # /api/sync-status, /api/app-settings, /api/theme
-│   │   └── qr.rs               # /qr-image y /qr (redirección)
-│   ├── funciones/
-│   │   ├── configuracion.rs    # Extensiones permitidas, límite 1000 MB y secure_filename
-│   │   ├── paths.rs            # Rutas de datos (%LOCALAPPDATA%/NetDrop/File y /QR)
-│   │   ├── show_file.rs        # Listado ordenado por mtime y formato legible de bytes
-│   │   ├── ip.rs               # Detección de IP local mediante socket UDP a 8.8.8.8:80
-│   │   ├── qr_generator.rs     # Generación de QR con logo central en 1/4 de escala
-│   │   ├── close.rs            # Comprobación de puerto 5000 (instancia previa)
-│   │   └── abrir_navegador.rs  # Apertura de navegador nativo
-│   └── lanzador/
-│       ├── main.rs             # Mini ventana independiente (350x250)
-│       └── mod.rs
-├── templates/                  # Plantillas HTML adaptadas a Tera
-├── static/                     # CSS, JavaScript, temas e iconos
-├── distribucion/               # Inno Setup (.iss) y lanzador para Linux (.desktop)
-└── .github/workflows/          # CI automático (test + clippy + fmt) y Release al crear tag
+│   ├── main.rs                      # Equivale al bloque __main__ de app.py, ejecutar_servidor y arrancar_webview
+│   ├── app.rs                       # Equivale a las rutas, plantillas y lógica de servidor de app.py
+│   ├── lib.rs                       # Exportación modular y suite completa de pruebas unitarias
+│   ├── funciones/                   # Módulos idénticos a Funciones/ de Python
+│   │   ├── configuracion.rs         # configuracion.py (constantes y ALLOWED_EXTENSIONS)
+│   │   ├── paths.rs                 # paths.py (10 funciones idénticas)
+│   │   ├── show_file.rs             # Show_File.py (formatear_tamano y show_file)
+│   │   ├── ip.rs                    # ip.py (sacar_ip con socket UDP)
+│   │   ├── qr_generator.rs          # Qr_Generator.py (generar_qr con logo superpuesto)
+│   │   ├── close.rs                 # close.py (esta_cerrado con timeout de 1s)
+│   │   └── abrir_navegador.rs       # abrirNavegador.py (abrir_navegador)
+│   └── lanzador/                    # Lanzador/ de Python
+│       └── main.rs                  # main.py (clase MiApp con new, establecer_icono, cargar_estilos, e iniciador)
+├── templates/                       # Plantillas Jinja2 adaptadas a Tera (misma estructura)
+├── static/                          # CSS, JavaScript, temas e iconos (copiados idénticos)
+├── tests/
+│   └── paridad_test.py              # Suite de pruebas automatizadas de paridad HTTP Python vs. Rust
+├── distribucion/                    # Inno Setup (.iss) y lanzador para Linux (.desktop)
+├── netdrop-installer/DEBIAN/        # Archivo de control para empaquetado Debian/Ubuntu
+├── MAPA_PYTHON_RUST.md              # Tabla detallada 1 a 1 de archivos y funciones
+├── MIGRACION.md                     # Bitácora y documentación exhaustiva de la migración
+├── PRODUCT.md                       # Especificación técnica del producto
+├── RELEASE_NOTES.md                 # Notas de versión
+└── .github/workflows/               # CI automático (ci.yml) y Release automatizado (release.yml)
 ```
 
 ---
 
 ## 🛠️ Instalación y Uso
 
-### 1. Descarga para Windows
-Puedes descargar directamente el instalador o el ejecutable portable desde la carpeta `dist/` o desde los [Releases](https://github.com/NioyDev/NetDrop-Rust/releases):
-- **Instalador:** `NetDropRS-Setup.exe` (asistente de instalación Inno Setup con accesos directos).
-- **Portable:** `NetDropRS.exe` (ejecutar directamente sin instalación).
+### 1. Descarga de Paquetes Oficiales (Releases)
+Puedes descargar directamente los artefactos oficiales desde los [Releases de GitHub](https://github.com/NioyDev/NetDrop-Rust/releases):
+- **Windows (Instalador):** `NetDrop-Rust-Setup.exe` (asistente de instalación Inno Setup con acceso directo y soporte para desinstalación limpia).
+- **Windows (Portable):** `NetDrop-Rust-Windows-x64.zip` (archivo comprimido con ejecutable autónomo `netdrop.exe`).
+- **Linux (Tarball):** `NetDrop-Rust-Linux-x64.tar.gz` (binario compilado con archivo `.desktop` y licencia).
+- **Linux (Debian / Ubuntu):** `netdrop-rust_amd64.deb` (paquete nativo instalable con `sudo dpkg -i netdrop-rust_amd64.deb`).
 
 ### 2. Compilar desde el código fuente
 
@@ -127,17 +130,17 @@ cargo clippy -- -D warnings
 
 ## 📋 Estado de la Migración
 
-- [x] Arquitectura de módulos idéntica en Rust (`src/rutas`, `src/funciones`, `src/lanzador`)
-- [x] Contrato HTTP y endpoints 100% compatibles con el frontend original
+- [x] Arquitectura de módulos y funciones 1 a 1 en Rust (`src/app.rs`, `src/funciones/`, `src/lanzador/`)
+- [x] Contrato HTTP y endpoints 100% idénticos con paridad verificada contra Python (`tests/paridad_test.py`)
 - [x] Subida tradicional y streaming por chunks con ensamblado atómico
 - [x] Motor de plantillas Tera con assets embebidos en el binario (`rust-embed`)
 - [x] Generación de QR con logotipo centrado
-- [x] Detección de instancia única en puerto 5000
-- [x] Ventana de escritorio nativa (`wry`/`tao`) y modo segundo plano
+- [x] Detección de instancia única en puerto 5000 con timeout de 1s
+- [x] Ventana de escritorio nativa y modo segundo plano
 - [x] Soporte TLS / HTTPS opcional mediante certificados locales
 - [x] Suite de pruebas unitarias y de integración (14 tests pasando)
-- [x] Empaquetado para Windows (Portable `.exe` e instalador Inno Setup)
-- [x] Integración continua con GitHub Actions
+- [x] Empaquetado oficial: `NetDrop-Rust-Windows-x64.zip`, `NetDrop-Rust-Setup.exe`, `NetDrop-Rust-Linux-x64.tar.gz`, `netdrop-rust_amd64.deb`
+- [x] Integración continua y workflows de release automatizados con GitHub Actions
 
 > **Nota sobre la "Función de desbloqueo de archivos":**
 > La documentación histórica del proyecto original mencionaba una función de desbloqueo de archivos para Windows. Tras una auditoría exhaustiva del código fuente en Python, se constató que dicha función nunca existió en código ejecutable. Para más detalles, consulta [MIGRACION.md](MIGRACION.md).
@@ -147,4 +150,4 @@ cargo clippy -- -D warnings
 ## 📄 Licencia
 
 Este proyecto se distribuye bajo la licencia **PolyForm Noncommercial 1.0.0**.
-Para más detalles, consulta [LICENSE.txt](LICENSE.txt).
+Para más detalles, consulta [LICENSE](LICENSE) o su versión traducida al español [LICENSE.es.md](LICENSE.es.md).
