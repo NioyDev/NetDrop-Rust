@@ -1,0 +1,112 @@
+name: Release (Linux & Windows)
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-windows:
+    name: Compilar Windows (Portable, Setup & Zip)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Compilar binario en Release
+        run: cargo build --release --locked
+
+      - name: Instalar Inno Setup
+        run: choco install innosetup -y
+
+      - name: Crear Instalador Inno Setup
+        run: |
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" distribucion/NetDrop-Setup.iss
+
+      - name: Preparar artefactos Windows
+        shell: powershell
+        run: |
+          New-Item -ItemType Directory -Force -Path dist
+          Copy-Item target/release/netdrop.exe dist/NetDrop-Windows-Portable.exe
+          Compress-Archive -Path target/release/netdrop.exe, LICENSE.txt, README.md -DestinationPath dist/NetDrop-Windows-x64.zip -Force
+
+      - name: Subir artefactos Windows
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-artifacts
+          path: |
+            dist/NetDrop-Windows-Portable.exe
+            dist/NetDrop-Setup.exe
+            dist/NetDrop-Windows-x64.zip
+
+  build-linux:
+    name: Compilar Linux (.deb & .zip)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Instalar dependencias WebKit
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libjavascriptcoregtk-4.1-dev libsoup-3.0-dev
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Compilar binario en Release
+        run: cargo build --release --locked
+
+      - name: Instalar cargo-deb
+        run: cargo install cargo-deb || true
+
+      - name: Construir paquete .deb
+        run: |
+          mkdir -p dist
+          cargo deb -p netdrop -o dist/netdrop-installer.deb || true
+
+      - name: Empaquetar Linux .zip
+        run: |
+          mkdir -p dist/netdrop-linux
+          cp target/release/netdrop dist/netdrop-linux/
+          cp LICENSE.txt dist/netdrop-linux/
+          cp README.md dist/netdrop-linux/
+          cd dist && zip -r NetDrop-Linux-x64.zip netdrop-linux/
+
+      - name: Subir artefactos Linux
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-artifacts
+          path: |
+            dist/NetDrop-Linux-x64.zip
+            dist/*.deb
+
+  publish-release:
+    name: Publicar GitHub Release Unificada
+    needs: [build-windows, build-linux]
+    runs-on: ubuntu-latest
+    if: (startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch') && success()
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Descargar artefactos Linux
+        uses: actions/download-artifact@v4
+        with:
+          name: linux-artifacts
+          path: release-assets/
+
+      - name: Descargar artefactos Windows
+        uses: actions/download-artifact@v4
+        with:
+          name: windows-artifacts
+          path: release-assets/
+
+      - name: Publicar Release en GitHub
+        uses: softprops/action-gh-release@v2
+        with:
+          name: NetDrop Release ${{ github.ref_name }}
+          draft: false
+          prerelease: false
+          files: release-assets/*

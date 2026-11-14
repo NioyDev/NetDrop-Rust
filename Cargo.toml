@@ -1,5 +1,81 @@
 [package]
-name = "netdrop-rs"
-version = "0.1.0"
+name = "netdrop"
+version = "2.1.2"
 edition = "2021"
+default-run = "netdrop"
+authors = ["Nioy <https://github.com/NioyDev>"]
+description = "Transferencia ultraligera de archivos en red local con código QR, interfaz web y ventana de escritorio nativa."
 license = "PolyForm-Noncommercial-1.0.0"
+repository = "https://github.com/NioyDev/NetDrop-Rust"
+readme = "README.md"
+
+[dependencies]
+# Servidor web y asíncrono
+tokio = { version = "1.41", features = ["full"] }
+axum = { version = "0.7", features = ["multipart"] }
+tower = { version = "0.5", features = ["util"] }
+tower-http = { version = "0.6", features = ["compression-full", "cors", "trace", "set-header", "fs"] }
+axum-server = { version = "0.7", default-features = false, features = ["tls-rustls"], optional = true }
+rustls = { version = "0.23", default-features = false, features = ["ring", "std", "logging"], optional = true }
+rustls-pemfile = { version = "2.2", optional = true }
+
+# Plantillas y datos
+tera = "1.20"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+mime_guess = "2.0"
+percent-encoding = "2.3"
+chrono = "0.4"
+tokio-util = { version = "0.7", features = ["io"] }
+
+# Assets embebidos en el binario
+rust-embed = { version = "8.5", features = ["interpolate-folder-path"] }
+
+# Sistema y utilidades
+directories = "5.0"
+open = "5.3"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+thiserror = "2.0"
+anyhow = "1.0"
+
+# Código QR con logo
+qrcode = { version = "0.14", default-features = false, features = ["image"] }
+image = { version = "0.25", default-features = false, features = ["png", "jpeg"] }
+
+# Interfaz de escritorio nativa (Webview)
+wry = { version = "0.47", optional = true }
+tao = { version = "0.30", optional = true }
+
+[dev-dependencies]
+http-body-util = "0.1"
+reqwest = { version = "0.12", default-features = false, features = ["json", "multipart", "stream"] }
+tempfile = "3.14"
+
+[features]
+default = ["tls"]
+desktop = ["dep:wry", "dep:tao"]
+tls = ["dep:axum-server", "dep:rustls", "dep:rustls-pemfile"]
+launcher = ["desktop"]
+
+[[bin]]
+name = "netdrop"
+path = "src/main.rs"
+
+[[bin]]
+name = "netdrop-launcher"
+path = "src/lanzador/main.rs"
+required-features = ["launcher"]
+
+[profile.dev]
+debug = 0
+
+[profile.test]
+debug = 0
+
+[profile.release]
+opt-level = 3
+lto = false
+codegen-units = 16
+panic = "abort"
+strip = true

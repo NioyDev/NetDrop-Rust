@@ -1,0 +1,419 @@
+/* ================================
+   GLOBAL DESIGN SYSTEM & UX UTILITIES
+   ================================ */
+@import url('variables.css');
+@import url('layout-variables.css');
+
+*, *::before, *::after {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+}
+
+html {
+    scroll-behavior: smooth;
+    font-family: var(--font-family);
+    background-color: var(--color-bg-base);
+    color: var(--color-text);
+}
+
+body {
+    min-height: 100vh;
+    background-color: var(--color-bg-base);
+    color: var(--color-text);
+    line-height: 1.6;
+}
+
+/* Header & Nav */
+.app-header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    z-index: 100;
+    background-color: var(--color-bg-base);
+    border-bottom: 1px solid var(--color-border);
+}
+
+.header-container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 16px 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.brand-logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+    color: var(--color-text-heading);
+}
+
+.logo-img {
+    width: 28px;
+    height: 28px;
+    object-fit: contain;
+}
+
+.brand-name {
+    font-size: 18px;
+    font-weight: 600;
+    letter-spacing: -0.3px;
+    color: var(--color-text-heading);
+}
+
+.nav-links {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.nav-link {
+    text-decoration: none;
+    color: var(--color-text-muted);
+    font-size: 14px;
+    font-weight: 500;
+    padding-bottom: 2px;
+    border-bottom: 2px solid transparent;
+    transition: color 0.15s ease, border-color 0.15s ease;
+}
+
+.nav-link-btn {
+    background: none;
+    border: none;
+    color: var(--color-text-muted);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    padding-bottom: 2px;
+    border-bottom: 2px solid transparent;
+    transition: color 0.15s ease, border-color 0.15s ease;
+}
+
+.nav-link:hover, .nav-link-btn:hover {
+    color: var(--color-text-heading);
+}
+
+.nav-link.active {
+    color: var(--color-text-heading);
+    border-bottom-color: var(--color-accent);
+}
+
+/* Main Layout */
+.main-content {
+    padding-top: 100px;
+    padding-bottom: 60px;
+}
+
+.page-container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 0 24px;
+}
+
+/* Buttons */
+.btn-primary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 16px;
+    border-radius: 6px;
+    background-color: var(--color-accent);
+    color: #ffffff;
+    font-size: 13px;
+    font-weight: 500;
+    text-decoration: none;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+}
+
+.btn-primary:hover {
+    background-color: var(--color-accent-hover);
+}
+
+.btn-primary:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.btn-subtle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 14px;
+    border-radius: 6px;
+    background-color: transparent;
+    color: var(--color-text-muted);
+    font-size: 13px;
+    font-weight: 500;
+    text-decoration: none;
+    border: 1px solid var(--color-border);
+    cursor: pointer;
+    transition: color 0.15s ease, border-color 0.15s ease;
+}
+
+.btn-subtle:hover {
+    color: var(--color-text-heading);
+    border-color: var(--color-border-hover);
+    background-color: var(--color-surface);
+}
+
+.mono {
+    font-family: var(--font-mono);
+}
+
+/* Modales & QR Modal Dynamic Surface */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.4);
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+.modal-content {
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 12px;
+    padding: 24px;
+    max-width: 400px;
+    width: 100%;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.15);
+    color: var(--color-text);
+}
+
+.modal-content h2 {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--color-text-heading);
+    margin-bottom: 8px;
+}
+
+.modal-content p {
+    font-size: 14px;
+    color: var(--color-text-muted);
+    margin-bottom: 20px;
+    line-height: 1.5;
+}
+
+.modal-header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.modal-header-row h2 {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--color-text-heading);
+    margin: 0;
+}
+
+.modal-close {
+    font-size: 22px;
+    color: var(--color-text-muted);
+    cursor: pointer;
+    line-height: 1;
+    transition: color 0.15s ease;
+}
+
+.modal-close:hover {
+    color: var(--color-text-heading);
+}
+
+/* Modal Action Buttons */
+.modal-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    margin-top: 20px;
+}
+
+.modal-btn {
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    border: none;
+    transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.modal-btn-secondary {
+    background-color: var(--color-bg-base);
+    color: var(--color-text);
+    border: 1px solid var(--color-border);
+}
+
+.modal-btn-secondary:hover {
+    background-color: var(--color-surface-hover);
+    border-color: var(--color-border-hover);
+}
+
+.modal-btn-primary {
+    background-color: var(--color-accent);
+    color: #ffffff;
+}
+
+.modal-btn-primary:hover {
+    background-color: var(--color-accent-hover);
+}
+
+.modal-btn-danger {
+    background-color: var(--color-danger);
+    color: #ffffff;
+}
+
+.modal-btn-danger:hover {
+    background-color: var(--color-danger-hover);
+}
+
+/* Modal QR Details */
+.qr-modal-img-frame {
+    width: 180px;
+    height: 180px;
+    margin: 0 auto 16px auto;
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    padding: 10px;
+    background: #ffffff;
+}
+
+.qr-modal-img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+.qr-modal-ip-text {
+    font-size: 13px;
+    color: var(--color-text-muted);
+    margin-bottom: 8px;
+}
+
+.ip-copy-box {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--color-bg-base);
+    border: 1px solid var(--color-border);
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--color-text-heading);
+}
+
+.btn-copy-small {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 4px;
+    padding: 3px 8px;
+    font-size: 11px;
+    font-weight: 500;
+    cursor: pointer;
+    color: var(--color-accent);
+    transition: background-color 0.15s ease;
+}
+
+.btn-copy-small:hover {
+    background: var(--color-accent-bg);
+}
+
+/* Toast Notifications System UX */
+.toast-container {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    z-index: 2000;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    pointer-events: none;
+}
+
+.toast-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--color-surface);
+    color: var(--color-text-heading);
+    border: 1px solid var(--color-border);
+    padding: 12px 18px;
+    border-radius: 12px;
+    font-size: 13px;
+    font-weight: 500;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
+    opacity: 0;
+    transform: translateY(16px) scale(0.96);
+    transition: opacity 0.25s cubic-bezier(0.16, 1, 0.3, 1), transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    pointer-events: auto;
+}
+
+.toast-card.show {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+}
+
+.toast-bounce {
+    animation: toastPulse 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes toastPulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.06); }
+    100% { transform: scale(1); }
+}
+
+.toast-icon {
+    width: 26px;
+    height: 26px;
+    min-width: 26px;
+    border-radius: 50%;
+    background: var(--color-accent-bg);
+    color: var(--color-accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.toast-icon svg {
+    width: 14px;
+    height: 14px;
+}
+
+.toast-content {
+    flex: 1;
+}
+
+.toast-text {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--color-text-heading);
+}
+
+.toast-multiplier {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 20px;
+    background: var(--color-accent);
+    color: #ffffff;
+    letter-spacing: 0.5px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}

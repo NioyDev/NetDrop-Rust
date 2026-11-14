@@ -1,0 +1,6 @@
+[build]
+jobs = 1
+target-dir = "C:/Users/migue/.cargo-target/netdrop-rust"
+
+[env]
+RUST_MIN_STACK = "16777216"
