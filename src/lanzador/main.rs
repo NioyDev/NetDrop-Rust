@@ -1,3 +1,5 @@
+#![windows_subsystem = "windows"]
+
 use netdrop::funciones::abrir_navegador::abrir_navegador;
 
 // Equivale a clase MiApp de Lanzador/main.py

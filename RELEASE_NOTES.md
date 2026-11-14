@@ -61,7 +61,7 @@ Dado que los archivos ejecutables son de distribucion comunitaria de codigo abie
 Verifique la integridad de los archivos descargados comprobando su hash SHA-256:
 
 - NetDrop-Rust-Setup.exe:
-  d6573a9a6a92c17bac9922f8706c6df7b464dedface5c53a74db95a5c2c06a07
+  6f3f94eb0fbf03b938af39aac81a38898d9299852fcfd639895c33efbca88342
 
 - NetDrop-Rust-Windows-x64.zip:
-  6e5aa9ee557bc7db169035ce6faef3e36717415d5d0ee06df87d120105e8193c
+  010415d707fd9241cb2559b1b1635eaafa93536b18f708c2bc7accb76b5ffae7
