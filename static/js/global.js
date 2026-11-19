@@ -244,7 +244,7 @@
     }
 
     /**
-     * Atajos de teclado accesibles (Tecla Esc).
+     * Atajos de teclado accesibles (Tecla Esc) y bloqueo de inspector web.
      * @param {KeyboardEvent} event 
      */
     function handleKeydown(event) {
@@ -253,12 +253,31 @@
             const downloadModal = document.getElementById('downloadModal');
             if (downloadModal) downloadModal.style.display = 'none';
         }
+
+        // Bloquear atajos de depuración web en la aplicación nativa (F12, Ctrl+U, Ctrl+Shift+I, etc.)
+        if (
+            event.key === 'F12' ||
+            (event.ctrlKey && (event.key === 'u' || event.key === 'U' || event.key === 's' || event.key === 'S' || event.key === 'p' || event.key === 'P')) ||
+            (event.ctrlKey && event.shiftKey && (event.key === 'i' || event.key === 'I' || event.key === 'j' || event.key === 'J' || event.key === 'c' || event.key === 'C'))
+        ) {
+            event.preventDefault();
+        }
+    }
+
+    /**
+     * Deshabilita el menú contextual del navegador (clic derecho) para brindar
+     * una experiencia limpia de aplicación nativa.
+     * @param {MouseEvent} event 
+     */
+    function handleContextMenu(event) {
+        event.preventDefault();
     }
 
     // Inicialización de escuchadores globales
     document.addEventListener('click', handleActionClick);
     window.addEventListener('click', handleBackdropClick);
     window.addEventListener('keydown', handleKeydown);
+    window.addEventListener('contextmenu', handleContextMenu);
 
     // Exportación global en el objeto window
     window.showToast = showToast;

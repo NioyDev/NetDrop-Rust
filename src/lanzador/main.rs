@@ -111,9 +111,11 @@ impl MiApp {
 </html>"#
             );
 
-            let _webview = WebViewBuilder::new(&window)
+            let _webview = WebViewBuilder::new()
                 .with_html(html)
-                .with_ipc_handler(|msg| match msg.as_str() {
+                .with_devtools(false)
+                .with_initialization_script("window.addEventListener('contextmenu', function(e){ e.preventDefault(); });")
+                .with_ipc_handler(|req| match req.body().as_str() {
                     "open" => {
                         abrir_navegador();
                     }
@@ -122,7 +124,7 @@ impl MiApp {
                     }
                     _ => {}
                 })
-                .build()
+                .build(&window)
                 .expect("Error inicializando WebView del lanzador");
 
             event_loop.run(move |event, _, control_flow| {

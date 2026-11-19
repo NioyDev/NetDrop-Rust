@@ -41,7 +41,12 @@ pub fn arrancar_webview(proto: &str, shared_state: Arc<AppState>) {
     };
 
     let url = format!("{proto}://127.0.0.1:5000");
-    let _webview = match WebViewBuilder::new(&window).with_url(&url).build() {
+    let _webview = match WebViewBuilder::new()
+        .with_url(&url)
+        .with_devtools(false)
+        .with_initialization_script("window.addEventListener('contextmenu', function(e){ e.preventDefault(); });")
+        .build(&window)
+    {
         Ok(wv) => wv,
         Err(e) => {
             warn!("No se pudo crear el WebView: {e}. Abriendo navegador...");
