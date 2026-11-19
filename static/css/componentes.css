@@ -286,9 +286,11 @@
 
 .json-actions {
     display: flex;
-    justify-content: flex-end;
+    justify-content: flex-start;
+    align-items: center;
     gap: 10px;
     flex-wrap: wrap;
+    margin-top: 14px;
 }
 
 /* Settings Tabs Navigation */

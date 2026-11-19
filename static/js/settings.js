@@ -22,6 +22,9 @@
      */
     function setupEventListeners() {
         document.addEventListener('click', handleSettingsClick);
+        window.addEventListener('theme-changed', () => {
+            renderThemeGrid();
+        });
 
         const fileInput = document.getElementById('ThemeFileInput');
         if (fileInput) {
@@ -104,6 +107,7 @@
             card.className = `theme-card ${isSelected ? 'active' : ''}`;
             card.dataset.action = 'select-theme';
             card.dataset.themeId = theme.id;
+            card.setAttribute('data-theme-id', theme.id);
 
             card.innerHTML = `
                 <div class="theme-card-header">
@@ -126,7 +130,9 @@
      */
     function applySelectedTheme(theme) {
         if (typeof window.applyThemeVariables === 'function') {
-            window.applyThemeVariables(theme);
+            window.applyThemeVariables(theme, true);
+        } else if (typeof applyThemeVariables === 'function') {
+            applyThemeVariables(theme, true);
         }
         renderThemeGrid();
         if (window.showToast) window.showToast(`✓ Tema "${theme.name}" aplicado`);
@@ -303,7 +309,7 @@
             switchTab(tabKey, target);
         } else if (action === 'select-theme') {
             event.preventDefault();
-            const themeId = target.getAttribute('data-themeId');
+            const themeId = target.dataset.themeId || target.getAttribute('data-theme-id') || target.getAttribute('data-themeId');
             const found = defaultThemes.find(t => t.id === themeId);
             if (found) applySelectedTheme(found);
         } else if (action === 'apply-custom-theme') {

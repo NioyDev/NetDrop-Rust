@@ -134,6 +134,11 @@ function applyThemeVariables(inputTheme, syncServer = true) {
         localStorage.setItem('netdrop_active_theme_data', JSON.stringify(theme));
     } catch (e) {}
 
+    // Notificar a otros componentes que el tema cambió
+    try {
+        window.dispatchEvent(new CustomEvent('theme-changed', { detail: theme }));
+    } catch (e) {}
+
     // Persistir en servidor (para Escritorio pywebview / Móvil)
     if (syncServer && window.fetch) {
         fetch('/api/theme', {
@@ -143,6 +148,10 @@ function applyThemeVariables(inputTheme, syncServer = true) {
         }).catch(() => {});
     }
 }
+
+// Exportar globalmente en window para acceso desde cualquier script
+window.applyThemeVariables = applyThemeVariables;
+window.DEFAULT_THEMES = DEFAULT_THEMES;
 
 async function initThemeEngine() {
     // 1. Carga ultra-rápida desde localStorage (si existe)
@@ -177,6 +186,7 @@ async function initThemeEngine() {
 }
 
 // Iniciar inmediatamente
+window.initThemeEngine = initThemeEngine;
 initThemeEngine();
 
 // Re-asegurar al completar DOM

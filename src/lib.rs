@@ -191,6 +191,9 @@ mod tests {
         let val: Value = serde_json::from_slice(&body).unwrap();
         assert_eq!(val["ok"], true);
         assert_eq!(val["settings"]["background_mode"], true);
+
+        // Restaurar estado por defecto (background_mode: false)
+        let _ = std::fs::remove_file(crate::funciones::paths::settings_file_path());
     }
 
     #[tokio::test]

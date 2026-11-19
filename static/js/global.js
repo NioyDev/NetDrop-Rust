@@ -191,7 +191,7 @@
         }
 
         if (typeof window.applyThemeVariables === 'function') {
-            window.applyThemeVariables(targetTheme);
+            window.applyThemeVariables(targetTheme, true);
             showToast(`✓ Tema "${targetTheme.name}" activado`);
         }
     }
