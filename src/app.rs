@@ -105,7 +105,7 @@ pub async fn add_cache_headers(req: Request<Body>, next: Next) -> Response<Body>
     if path.starts_with("/static/") {
         headers.insert(
             CACHE_CONTROL,
-            HeaderValue::from_static("public, max-age=31536000, immutable"),
+            HeaderValue::from_static("public, max-age=0, must-revalidate"),
         );
     } else if path.starts_with("/api/") {
         headers.insert(

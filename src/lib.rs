@@ -244,7 +244,7 @@ mod tests {
         assert_eq!(res.status(), StatusCode::OK);
         assert_eq!(
             res.headers().get(header::CACHE_CONTROL).unwrap(),
-            "public, max-age=31536000, immutable"
+            "public, max-age=0, must-revalidate"
         );
     }
 
