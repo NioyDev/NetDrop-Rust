@@ -95,9 +95,19 @@ const DEFAULT_THEMES = [
   }
 ];
 
-function applyThemeVariables(theme, syncServer = true) {
-    if (!theme) return;
+function applyThemeVariables(inputTheme, syncServer = true) {
+    if (!inputTheme) return;
     const root = document.documentElement;
+
+    // Fusión defensiva con plantilla base para garantizar contraste WCAG AA siempre
+    const isDark = inputTheme.bgBase && (
+        inputTheme.bgBase === '#000000' ||
+        inputTheme.bgBase.startsWith('#0') ||
+        inputTheme.bgBase.startsWith('#1') ||
+        inputTheme.bgBase.startsWith('#2')
+    );
+    const baseFallback = isDark ? DEFAULT_THEMES[1] : DEFAULT_THEMES[0];
+    const theme = Object.assign({}, baseFallback, inputTheme);
 
     if (theme.bgBase) {
         root.style.setProperty('--color-bg-base', theme.bgBase);

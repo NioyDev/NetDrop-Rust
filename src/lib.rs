@@ -225,6 +225,9 @@ mod tests {
         let val: Value = serde_json::from_slice(&body).unwrap();
         assert_eq!(val["ok"], true);
         assert_eq!(val["theme"]["id"], "test-theme");
+
+        // Limpieza defensiva del archivo de prueba para no corromper el entorno de usuario
+        let _ = std::fs::remove_file(crate::funciones::paths::theme_file_path());
     }
 
     #[tokio::test]
