@@ -147,7 +147,9 @@
         <div class="bottom-sheet-handle"></div>
         <div class="modal-header-row">
             <h2 id="previewTitle">Vista Previa</h2>
-            <button type="button" class="modal-close" data-action="close-preview" aria-label="Cerrar">&times;</button>
+            <button type="button" class="modal-close" data-action="close-preview" aria-label="Cerrar">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </button>
         </div>
         <div id="previewBody" class="preview-body">
             <div class="preview-loading">Cargando vista previa...</div>
@@ -165,7 +167,9 @@
         <div class="bottom-sheet-handle"></div>
         <div class="modal-header-row">
             <h2 id="deleteModalTitle">Eliminar archivo</h2>
-            <button type="button" class="modal-close" data-action="close-delete" aria-label="Cerrar">&times;</button>
+            <button type="button" class="modal-close" data-action="close-delete" aria-label="Cerrar">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </button>
         </div>
         <p id="deleteModalMessage">¿Estás seguro de que deseas eliminar este archivo?</p>
         <div class="modal-actions">
@@ -178,5 +182,5 @@
 {% endblock %}
 
 {% block scripts %}
-<script src="/static/js/index.js" defer></script>
+<script src="/static/js/index.js?v=5" defer></script>
 {% endblock %}
