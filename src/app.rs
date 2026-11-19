@@ -2,7 +2,7 @@ use axum::body::Body;
 use axum::extract::{DefaultBodyLimit, Multipart, Path as AxPath, State};
 use axum::http::header::{
     ACCEPT_RANGES, CACHE_CONTROL, CONTENT_DISPOSITION, CONTENT_LENGTH, CONTENT_RANGE, CONTENT_TYPE,
-    LOCATION,
+    HeaderName, LOCATION,
 };
 use axum::http::{HeaderMap, HeaderValue, Request, StatusCode};
 use axum::middleware::{self, Next};
@@ -73,18 +73,42 @@ pub struct AppState {
     pub theme: Arc<RwLock<Option<Value>>>,
 }
 
-// Equivale a add_cache_headers de app.py
+// Equivale a add_cache_headers de app.py (con blindaje de seguridad OWASP Top 10)
 pub async fn add_cache_headers(req: Request<Body>, next: Next) -> Response<Body> {
     let path = req.uri().path().to_string();
     let mut response = next.run(req).await;
+    let headers = response.headers_mut();
+
+    headers.insert(
+        HeaderName::from_static("x-content-type-options"),
+        HeaderValue::from_static("nosniff"),
+    );
+    headers.insert(
+        HeaderName::from_static("x-frame-options"),
+        HeaderValue::from_static("SAMEORIGIN"),
+    );
+    headers.insert(
+        HeaderName::from_static("referrer-policy"),
+        HeaderValue::from_static("strict-origin-when-cross-origin"),
+    );
+    headers.insert(
+        HeaderName::from_static("x-xss-protection"),
+        HeaderValue::from_static("1; mode=block"),
+    );
+    headers.insert(
+        HeaderName::from_static("content-security-policy"),
+        HeaderValue::from_static(
+            "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self'; font-src 'self'; media-src 'self' blob:; object-src 'none'; base-uri 'self'; frame-ancestors 'self';",
+        ),
+    );
 
     if path.starts_with("/static/") {
-        response.headers_mut().insert(
+        headers.insert(
             CACHE_CONTROL,
             HeaderValue::from_static("public, max-age=31536000, immutable"),
         );
     } else if path.starts_with("/api/") {
-        response.headers_mut().insert(
+        headers.insert(
             CACHE_CONTROL,
             HeaderValue::from_static("no-cache, must-revalidate"),
         );

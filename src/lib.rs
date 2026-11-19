@@ -263,4 +263,38 @@ mod tests {
         let res = app.oneshot(req).await.unwrap();
         assert!(res.status().is_redirection());
     }
+
+    #[tokio::test]
+    async fn test_seguridad_owasp_headers() {
+        let app = setup_test_app();
+        let req = Request::builder().uri("/").body(Body::empty()).unwrap();
+        let res = app.oneshot(req).await.unwrap();
+        assert_eq!(res.status(), StatusCode::OK);
+
+        let headers = res.headers();
+        assert_eq!(
+            headers.get("x-content-type-options").unwrap(),
+            "nosniff"
+        );
+        assert_eq!(
+            headers.get("x-frame-options").unwrap(),
+            "SAMEORIGIN"
+        );
+        assert_eq!(
+            headers.get("referrer-policy").unwrap(),
+            "strict-origin-when-cross-origin"
+        );
+        assert_eq!(
+            headers.get("x-xss-protection").unwrap(),
+            "1; mode=block"
+        );
+        assert!(
+            headers
+                .get("content-security-policy")
+                .unwrap()
+                .to_str()
+                .unwrap()
+                .contains("default-src 'self'")
+        );
+    }
 }

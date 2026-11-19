@@ -1,7 +1,6 @@
 /* ================================
-   DISEÑO EDITORIAL MINIMALISTA (SIN DEGRADADOS / PLANO)
+   DISEÑO EDITORIAL MINIMALISTA (SISTEMA NEXTHEZIA / HALLMARK)
    ================================ */
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400..600;1,9..40,400..600&family=Space+Mono&display=swap');
 
 :root {
     /* PALETA CÁLIDA Y PLANA */
@@ -29,7 +28,7 @@
     --color-border: #e6e2dc;
     --color-border-hover: #c5c0b8;
     
-    /* TIPOGRAFÍA EDITORIAL */
-    --font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    --font-mono: 'Space Mono', monospace;
+    /* TIPOGRAFÍA NATIVA DEL SISTEMA (CERO BLOQUEO DE RED / 100% OFFLINE) */
+    --font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    --font-mono: ui-monospace, 'Cascadia Code', 'Source Code Pro', Menlo, Consolas, monospace;
 }
