@@ -5,18 +5,32 @@
 <div class="page-container">
     <div class="form-card">
         <div class="form-header">
-            <h1 class="page-title">Subir archivo</h1>
-            <p class="page-subtitle">Cualquier equipo o teléfono conectado a la red local podrá descargarlo de inmediato.</p>
+            <h1 class="page-title">Subir archivos</h1>
+            <p class="page-subtitle">Comparte uno o múltiples archivos en tu red local en segundos.</p>
         </div>
 
         <form action="/upload" method="POST" enctype="multipart/form-data" class="upload-form" id="UploadForm">
             
             <div class="drop-zone" id="DropZone">
-                <input type="file" name="UPFile" id="UPFile" class="file-input" required aria-label="Seleccionar archivo" />
+                <input type="file" name="UPFile" id="UPFile" class="file-input" multiple required aria-label="Seleccionar archivos" />
                 <div class="drop-zone-inner">
-                    <p class="drop-title" id="DropTitle">Arrastra un archivo aquí</p>
-                    <p class="drop-subtitle" id="DropSubtitle">o pulsa para explorar en tu teléfono o PC</p>
+                    <div class="drop-icon-cloud">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                    </div>
+                    <p class="drop-title" id="DropTitle">Arrastra archivos aquí</p>
+                    <p class="drop-subtitle" id="DropSubtitle">o pulsa para seleccionar fotos o documentos de tu dispositivo</p>
                     <span class="file-badge" id="FileInfoBadge" style="display: none;"></span>
+                </div>
+            </div>
+
+            <!-- Cola de Subida en Lote (Multi-file Batch Queue) -->
+            <div class="upload-queue-container" id="UploadQueueContainer" style="display: none;">
+                <div class="upload-queue-header">
+                    <span class="upload-queue-title" id="UploadQueueTitle">Archivos seleccionados (0)</span>
+                    <span class="upload-queue-total" id="UploadQueueTotalSize">0 MB</span>
+                </div>
+                <div class="upload-queue-list" id="UploadQueueList">
+                    <!-- Filas generadas dinámicamente -->
                 </div>
             </div>
             
@@ -32,7 +46,7 @@
 
             <div class="form-actions">
                 <a href="/" class="btn-subtle">Cancelar</a>
-                <button type="submit" class="btn-primary" id="SubmitBtn" disabled>Enviar archivo</button>
+                <button type="submit" class="btn-primary" id="SubmitBtn" disabled>Enviar archivos</button>
             </div>
         </form>
     </div>

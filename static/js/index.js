@@ -1,7 +1,7 @@
 /**
  * @fileoverview Lógica de la Página de Inicio (SkillNexthezia / Mobile-First)
  * Búsqueda reactiva con debounce, filtros por categoría, Bottom Sheet de eliminación,
- * previsualización de archivos, subida rápida por chunks y sincronización en vivo.
+ * previsualización de archivos, subida rápida por chunks, overlay global y gestos táctiles.
  */
 
 (function () {
@@ -11,6 +11,7 @@
     let currentFilterType = 'all';
     let searchDebounceTimer = null;
     let isUploading = false;
+    let dragCounter = 0;
 
     /**
      * Inicialización al cargar el DOM.
@@ -18,6 +19,8 @@
     function initIndex() {
         setupSearchInput();
         setupQuickDropzone();
+        setupGlobalDragOverlay();
+        setupTouchSwipeGestures();
         setupLiveSync();
         setupFab();
         document.addEventListener('click', handlePageClick);
@@ -256,6 +259,91 @@
         fab.addEventListener('click', (e) => {
             e.preventDefault();
             fileInput.click();
+        });
+    }
+
+    /**
+     * Configura el overlay global para soltar archivos desde cualquier parte.
+     */
+    function setupGlobalDragOverlay() {
+        const overlay = document.getElementById('GlobalDragOverlay');
+        if (!overlay) return;
+
+        window.addEventListener('dragenter', (e) => {
+            e.preventDefault();
+            dragCounter++;
+            overlay.classList.add('drag-active');
+        });
+
+        window.addEventListener('dragleave', (e) => {
+            e.preventDefault();
+            dragCounter--;
+            if (dragCounter <= 0) {
+                dragCounter = 0;
+                overlay.classList.remove('drag-active');
+            }
+        });
+
+        window.addEventListener('dragover', (e) => {
+            e.preventDefault();
+        });
+
+        window.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dragCounter = 0;
+            overlay.classList.remove('drag-active');
+            const files = e.dataTransfer ? e.dataTransfer.files : null;
+            if (files && files.length > 0) {
+                handleQuickUpload(files[0]);
+            }
+        });
+    }
+
+    /**
+     * Configura gestos de deslizamiento táctil horizontal en móviles.
+     */
+    function setupTouchSwipeGestures() {
+        const cards = document.querySelectorAll('.file-item-card[data-touch-swipe="true"]');
+
+        cards.forEach(card => {
+            let startX = 0;
+            let startY = 0;
+            let deltaX = 0;
+
+            card.addEventListener('touchstart', (e) => {
+                const touch = e.touches[0];
+                startX = touch.clientX;
+                startY = touch.clientY;
+                deltaX = 0;
+                card.classList.add('swiping');
+            }, { passive: true });
+
+            card.addEventListener('touchmove', (e) => {
+                const touch = e.touches[0];
+                deltaX = touch.clientX - startX;
+                const deltaY = touch.clientY - startY;
+
+                // Solo desplazar si el movimiento es prioritariamente horizontal
+                if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 10) {
+                    card.style.transform = `translateX(${deltaX * 0.6}px)`;
+                }
+            }, { passive: true });
+
+            card.addEventListener('touchend', () => {
+                card.classList.remove('swiping');
+                card.style.transform = 'translateX(0)';
+
+                const filename = card.querySelector('[data-filename]')?.getAttribute('data-filename');
+                if (!filename) return;
+
+                if (deltaX < -75) {
+                    // Deslizar a la izquierda: acción de eliminar
+                    openDeleteSheet(filename);
+                } else if (deltaX > 75) {
+                    // Deslizar a la derecha: acción de copiar enlace
+                    copyFileLink(filename);
+                }
+            });
         });
     }
 

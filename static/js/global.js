@@ -1,6 +1,6 @@
 /**
  * @fileoverview Sistema Global de Interacción y Ergonomía Mobile-First (SkillNexthezia)
- * Manejo de Toasts, Bottom Sheets / Modales accesibles y delegación de eventos.
+ * Manejo de Toasts, Bottom Sheets / Modales accesibles, Web Share API y cambio rápido de tema.
  */
 
 (function () {
@@ -138,6 +138,65 @@
     }
 
     /**
+     * Comparte el enlace directo mediante Web Share API en dispositivos móviles.
+     */
+    function shareIpLink() {
+        const ipElem = document.getElementById('ipAddressText');
+        if (!ipElem) return;
+
+        const url = ipElem.textContent.trim();
+        if (navigator.share) {
+            navigator.share({
+                title: 'NetDrop - Red Local',
+                text: 'Conéctate a NetDrop para compartir archivos en la red local:',
+                url: url
+            }).then(() => {
+                showToast('✓ Enlace compartido');
+            }).catch(() => {
+                copyIpAddress();
+            });
+            return;
+        }
+        copyIpAddress();
+    }
+
+    /**
+     * Alterna rápidamente entre los temas visuales Claro y Oscuro.
+     */
+    async function toggleQuickTheme() {
+        let currentTheme = null;
+        try {
+            const raw = localStorage.getItem('netdrop_active_theme_data');
+            if (raw) currentTheme = JSON.parse(raw);
+        } catch (e) {}
+
+        const isDark = currentTheme && currentTheme.bgBase && (
+            currentTheme.bgBase === '#0f172a' ||
+            currentTheme.bgBase === '#1a1918' ||
+            currentTheme.bgBase.startsWith('#0') ||
+            currentTheme.bgBase.startsWith('#1')
+        );
+
+        let targetTheme = null;
+        try {
+            const res = await fetch('/static/json/themes.json');
+            const themes = await res.json();
+            targetTheme = isDark
+                ? themes.find(t => t.id === 'warm') || themes[0]
+                : themes.find(t => t.id === 'dark-slate') || themes[1];
+        } catch (e) {
+            targetTheme = isDark
+                ? { id: 'warm', name: 'Cálido Terracota', bgBase: '#faf8f5', surface: '#ffffff', surfaceHover: '#f3efe9', text: '#1a1a1a', textHeading: '#111111', textMuted: '#666360', accent: '#c85a32', accentHover: '#b04923', accentBg: 'rgba(200, 90, 50, 0.08)', border: '#e6e2dc', borderHover: '#c5c0b8', danger: '#c93b2b', dangerHover: '#a82e20', dangerBg: 'rgba(201, 59, 43, 0.08)' }
+                : { id: 'dark-slate', name: 'Oscuro Minimal', bgBase: '#0f172a', surface: '#1e293b', surfaceHover: '#334155', text: '#cbd5e1', textHeading: '#f8fafc', textMuted: '#94a3b8', accent: '#6366f1', accentHover: '#4f46e5', accentBg: 'rgba(99, 102, 241, 0.15)', border: '#334155', borderHover: '#475569', danger: '#ef4444', dangerHover: '#dc2626', dangerBg: 'rgba(239, 68, 68, 0.15)' };
+        }
+
+        if (typeof window.applyThemeVariables === 'function') {
+            window.applyThemeVariables(targetTheme);
+            showToast(`✓ Tema "${targetTheme.name}" activado`);
+        }
+    }
+
+    /**
      * Manejador delegado para clics con data-action.
      * @param {MouseEvent} event 
      */
@@ -155,6 +214,12 @@
         } else if (action === 'copy-ip') {
             event.preventDefault();
             copyIpAddress();
+        } else if (action === 'share-ip') {
+            event.preventDefault();
+            shareIpLink();
+        } else if (action === 'toggle-theme') {
+            event.preventDefault();
+            toggleQuickTheme();
         } else if (action === 'close-download-modal') {
             event.preventDefault();
             const modal = document.getElementById('downloadModal');
@@ -200,4 +265,5 @@
     window.openQrModal = openQrSheet;
     window.closeQrModal = closeQrSheet;
     window.copyIpAddress = copyIpAddress;
+    window.toggleQuickTheme = toggleQuickTheme;
 })();

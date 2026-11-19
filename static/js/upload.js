@@ -1,10 +1,12 @@
 /**
  * @fileoverview Lógica de la Página de Subida de Archivos (SkillNexthezia / Mobile-First)
- * Manejo de Drag & Drop, selección táctil de archivos y subida por fragmentos (chunked upload).
+ * Manejo de Drag & Drop, cola de subida múltiple en lote y subida por fragmentos (chunked upload).
  */
 
 (function () {
     'use strict';
+
+    let selectedFiles = [];
 
     /**
      * Formatea un tamaño numérico en bytes a cadena legible.
@@ -53,39 +55,82 @@
         });
 
         dropZone.addEventListener('drop', (e) => {
-            const files = e.dataTransfer ? e.dataTransfer.files : null;
-            if (files && files.length > 0) {
-                fileInput.files = files;
-                updateFileBadge(files[0]);
+            const files = e.dataTransfer ? Array.from(e.dataTransfer.files) : [];
+            if (files.length > 0) {
+                handleFilesSelected(files);
             }
         });
 
         fileInput.addEventListener('change', (e) => {
-            if (e.target.files && e.target.files[0]) {
-                updateFileBadge(e.target.files[0]);
+            const files = e.target.files ? Array.from(e.target.files) : [];
+            if (files.length > 0) {
+                handleFilesSelected(files);
             }
         });
     }
 
     /**
-     * Actualiza la interfaz tras seleccionar un archivo válido.
-     * @param {File} file 
+     * Actualiza la interfaz y la cola tras seleccionar uno o varios archivos.
+     * @param {File[]} files 
      */
-    function updateFileBadge(file) {
+    function handleFilesSelected(files) {
+        selectedFiles = files;
         const dropZone = document.getElementById('DropZone');
         const dropTitle = document.getElementById('DropTitle');
         const dropSubtitle = document.getElementById('DropSubtitle');
         const badge = document.getElementById('FileInfoBadge');
         const submitBtn = document.getElementById('SubmitBtn');
+        const queueContainer = document.getElementById('UploadQueueContainer');
+        const queueList = document.getElementById('UploadQueueList');
+        const queueTitle = document.getElementById('UploadQueueTitle');
+        const queueTotal = document.getElementById('UploadQueueTotalSize');
 
-        if (dropTitle) dropTitle.textContent = file.name;
-        if (dropSubtitle) dropSubtitle.textContent = 'Pulsa o arrastra otro archivo para cambiarlo';
-        if (badge) {
-            badge.textContent = formatFileSize(file.size);
-            badge.style.display = 'inline-block';
+        if (files.length === 1) {
+            const f = files[0];
+            if (dropTitle) dropTitle.textContent = f.name;
+            if (dropSubtitle) dropSubtitle.textContent = 'Pulsa para cambiar de archivo';
+            if (badge) {
+                badge.textContent = formatFileSize(f.size);
+                badge.style.display = 'inline-block';
+            }
+            if (queueContainer) queueContainer.style.display = 'none';
+            if (submitBtn) {
+                submitBtn.textContent = 'Enviar archivo';
+                submitBtn.disabled = false;
+            }
+        } else {
+            const totalBytes = files.reduce((acc, cur) => acc + cur.size, 0);
+            if (dropTitle) dropTitle.textContent = `${files.length} archivos seleccionados`;
+            if (dropSubtitle) dropSubtitle.textContent = 'Pulsa para seleccionar otros archivos';
+            if (badge) badge.style.display = 'none';
+
+            if (queueTitle) queueTitle.textContent = `Archivos seleccionados (${files.length})`;
+            if (queueTotal) queueTotal.textContent = formatFileSize(totalBytes);
+            if (queueList) {
+                queueList.innerHTML = '';
+                files.forEach((f, idx) => {
+                    const row = document.createElement('div');
+                    row.className = 'upload-queue-item';
+                    row.id = `QueueItem_${idx}`;
+                    row.innerHTML = `
+                        <div class="upload-queue-item-info">
+                            <span class="upload-queue-item-name" title="${f.name}">${f.name}</span>
+                            <span class="upload-queue-item-meta">${formatFileSize(f.size)}</span>
+                        </div>
+                        <span class="upload-queue-item-status" id="QueueStatus_${idx}">En espera</span>
+                    `;
+                    queueList.appendChild(row);
+                });
+            }
+
+            if (queueContainer) queueContainer.style.display = 'block';
+            if (submitBtn) {
+                submitBtn.textContent = `Enviar ${files.length} archivos`;
+                submitBtn.disabled = false;
+            }
         }
+
         if (dropZone) dropZone.classList.add('has-file');
-        if (submitBtn) submitBtn.disabled = false;
     }
 
     /**
@@ -93,56 +138,63 @@
      * @param {Event} event 
      */
     async function handleFormSubmit(event) {
-        const fileInput = document.getElementById('UPFile');
-        const submitBtn = document.getElementById('SubmitBtn');
-        const file = fileInput ? fileInput.files[0] : null;
-
-        if (!file || !window.fetch || !file.slice) return;
+        if (!selectedFiles || selectedFiles.length === 0) return;
         event.preventDefault();
 
+        const submitBtn = document.getElementById('SubmitBtn');
         const progressSection = document.getElementById('ProgressSection');
         const progressFill = document.getElementById('ProgressBarFill');
         const statusText = document.getElementById('UploadStatus');
         const percentText = document.getElementById('UploadPercentage');
 
-        const chunkSize = 2 * 1024 * 1024; // 2MB por chunk
-        const totalChunks = Math.max(1, Math.ceil(file.size / chunkSize));
-        const uploadId = window.crypto && window.crypto.randomUUID
-            ? window.crypto.randomUUID()
-            : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
-
         if (submitBtn) submitBtn.disabled = true;
         if (progressSection) progressSection.style.display = 'block';
-        if (progressFill) progressFill.style.transform = 'scaleX(0)';
-        if (statusText) statusText.textContent = 'Subiendo...';
-        if (percentText) percentText.textContent = '0%';
+
+        const totalFiles = selectedFiles.length;
 
         try {
-            await uploadFileChunks(file, uploadId, chunkSize, totalChunks, {
-                progressFill,
-                statusText,
-                percentText
-            });
+            for (let i = 0; i < totalFiles; i++) {
+                const file = selectedFiles[i];
+                const itemStatus = document.getElementById(`QueueStatus_${i}`);
+                if (itemStatus) itemStatus.textContent = 'Subiendo...';
 
-            if (statusText) statusText.textContent = '✓ Archivo subido con éxito';
-            if (window.showToast) window.showToast('✓ Subida completada');
+                await uploadSingleFile(file, {
+                    fileIndex: i,
+                    totalFiles: totalFiles,
+                    progressFill,
+                    statusText,
+                    percentText,
+                    itemStatus
+                });
+
+                if (itemStatus) {
+                    itemStatus.textContent = '✓ Listo';
+                    itemStatus.classList.add('done');
+                }
+            }
+
+            if (statusText) statusText.textContent = '✓ Subida completada con éxito';
+            if (window.showToast) window.showToast('✓ Todos los archivos subidos exitosamente');
             setTimeout(() => {
                 window.location.href = '/';
-            }, 350);
+            }, 450);
         } catch (error) {
             handleUploadError(error, statusText, submitBtn);
         }
     }
 
     /**
-     * Itera los fragmentos secuencialmente y los envía al backend.
+     * Sube un archivo por fragmentos de 2MB.
      * @param {File} file 
-     * @param {string} uploadId 
-     * @param {number} chunkSize 
-     * @param {number} totalChunks 
-     * @param {object} uiElements 
+     * @param {object} ui 
      */
-    async function uploadFileChunks(file, uploadId, chunkSize, totalChunks, uiElements) {
+    async function uploadSingleFile(file, ui) {
+        const chunkSize = 2 * 1024 * 1024;
+        const totalChunks = Math.max(1, Math.ceil(file.size / chunkSize));
+        const uploadId = window.crypto && window.crypto.randomUUID
+            ? window.crypto.randomUUID()
+            : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+
         for (let chunkIndex = 0; chunkIndex < totalChunks; chunkIndex++) {
             const start = chunkIndex * chunkSize;
             const end = Math.min(start + chunkSize, file.size);
@@ -161,17 +213,28 @@
                 body: formData
             });
 
-            chunkBlob = null; // Liberación de memoria para teléfonos
+            chunkBlob = null;
             const text = await response.text();
             const result = text ? JSON.parse(text) : {};
             if (!response.ok || !result.ok) {
                 throw new Error(result.error || 'Error al enviar fragmento');
             }
 
-            const percent = Math.round(((chunkIndex + 1) / totalChunks) * 100);
-            if (uiElements.progressFill) uiElements.progressFill.style.transform = `scaleX(${percent / 100})`;
-            if (uiElements.percentText) uiElements.percentText.textContent = percent + '%';
-            if (uiElements.statusText) uiElements.statusText.textContent = `Enviando (${chunkIndex + 1}/${totalChunks})...`;
+            const chunkPercent = Math.round(((chunkIndex + 1) / totalChunks) * 100);
+            const overallPercent = Math.round(
+                ((ui.fileIndex + (chunkIndex + 1) / totalChunks) / ui.totalFiles) * 100
+            );
+
+            if (ui.progressFill) ui.progressFill.style.transform = `scaleX(${overallPercent / 100})`;
+            if (ui.percentText) ui.percentText.textContent = overallPercent + '%';
+            if (ui.statusText) {
+                ui.statusText.textContent = ui.totalFiles > 1
+                    ? `Subiendo ${ui.fileIndex + 1}/${ui.totalFiles}: ${file.name}`
+                    : `Subiendo ${file.name} (${chunkPercent}%)...`;
+            }
+            if (ui.itemStatus) {
+                ui.itemStatus.textContent = `${chunkPercent}%`;
+            }
 
             await new Promise(resolve => setTimeout(resolve, 20));
         }

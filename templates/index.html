@@ -2,6 +2,17 @@
 
 {% block content %}
 
+<!-- Overlay de Arrastre Global a Pantalla Completa (Magic UI Dropzone) -->
+<div id="GlobalDragOverlay" class="global-drag-overlay" aria-hidden="true">
+    <div class="drag-overlay-box">
+        <div class="drag-overlay-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        </div>
+        <span class="drag-overlay-title">Suelta los archivos para compartir</span>
+        <span class="drag-overlay-subtitle">Se subirán directamente a la red local</span>
+    </div>
+</div>
+
 <div class="page-container" id="HomeContainer">
 
     <!-- Subida Rápida en Homepage (UX Dropzone) -->
@@ -38,12 +49,14 @@
     <div class="file-list-container" id="FileListContainer">
         <div class="file-list-header">
             <span class="file-count-label">{{ File|length }} {% if File|length == 1 %}archivo disponible{% else %}archivos disponibles{% endif %}</span>
+            <span class="file-mobile-hint">Desliza una tarjeta para acciones rápidas</span>
         </div>
         
         <div class="file-list-body" id="FileListBody">
             {% for file_item in File %}
             {% set ext = file_item.tipo %}
             <div class="file-item-card" 
+                 data-touch-swipe="true"
                  data-name="{{ file_item.nombre|lower }}" 
                  data-type="{{ ext }}">
                 
