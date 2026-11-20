@@ -98,13 +98,17 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
+      - name: Instalar paquetes Android SDK
+        run: |
+          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "build-tools;34.0.0" "platforms;android-34"
+
       - name: Compilar APK con Android Build Tools
         shell: bash
         run: |
           mkdir -p dist android/build_temp/compiled_res android/build_temp/gen android/build_temp/classes android/build_temp/dex
           
-          export ANDROID_HOME=${ANDROID_HOME:-/usr/local/lib/android/sdk}
-          ANDROID_JAR=$(find $ANDROID_HOME/platforms -name "android.jar" | sort -V | tail -n 1)
+          BUILD_TOOLS="$ANDROID_HOME/build-tools/34.0.0"
+          ANDROID_JAR="$ANDROID_HOME/platforms/android-34/android.jar"
           
           echo "Build tools: $BUILD_TOOLS"
           echo "Android JAR: $ANDROID_JAR"
