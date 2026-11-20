@@ -1018,6 +1018,35 @@ button:active,
     color: #10b981;
 }
 
+.upload-queue-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+}
+
+.btn-remove-queue-item {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    border-radius: 6px;
+    border: 1px solid var(--color-border);
+    background: transparent;
+    color: var(--color-text-muted);
+    cursor: pointer;
+    transition: all 0.15s ease;
+    padding: 0;
+}
+
+.btn-remove-queue-item:hover {
+    color: var(--color-danger);
+    border-color: var(--color-danger);
+    background: var(--color-danger-bg);
+    transform: scale(1.05);
+}
+
 /* Respeto estricto a las preferencias de reducción de movimiento */
 @media (prefers-reduced-motion: reduce) {
     *,

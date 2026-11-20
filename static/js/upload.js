@@ -29,6 +29,19 @@
         const form = document.getElementById('UploadForm');
         if (!fileInput || !dropZone || !form) return;
 
+        const queueList = document.getElementById('UploadQueueList');
+        if (queueList) {
+            queueList.addEventListener('click', (e) => {
+                const btn = e.target.closest('[data-action="remove-queued-file"]');
+                if (!btn) return;
+                const idx = parseInt(btn.getAttribute('data-idx'), 10);
+                if (!isNaN(idx) && idx >= 0 && idx < selectedFiles.length) {
+                    selectedFiles.splice(idx, 1);
+                    handleFilesSelected(selectedFiles);
+                }
+            });
+        }
+
         setupDropZoneEvents(dropZone, fileInput);
         form.addEventListener('submit', handleFormSubmit);
     }
@@ -85,6 +98,19 @@
         const queueTitle = document.getElementById('UploadQueueTitle');
         const queueTotal = document.getElementById('UploadQueueTotalSize');
 
+        if (files.length === 0) {
+            if (dropTitle) dropTitle.textContent = 'Arrastra archivos aquí';
+            if (dropSubtitle) dropSubtitle.textContent = 'o pulsa para seleccionar fotos o documentos de tu dispositivo';
+            if (badge) badge.style.display = 'none';
+            if (queueContainer) queueContainer.style.display = 'none';
+            if (submitBtn) {
+                submitBtn.textContent = 'Enviar archivos';
+                submitBtn.disabled = true;
+            }
+            if (dropZone) dropZone.classList.remove('has-file');
+            return;
+        }
+
         if (files.length === 1) {
             const f = files[0];
             if (dropTitle) dropTitle.textContent = f.name;
@@ -117,7 +143,12 @@
                             <span class="upload-queue-item-name" title="${f.name}">${f.name}</span>
                             <span class="upload-queue-item-meta">${formatFileSize(f.size)}</span>
                         </div>
-                        <span class="upload-queue-item-status" id="QueueStatus_${idx}">En espera</span>
+                        <div class="upload-queue-actions">
+                            <span class="upload-queue-item-status" id="QueueStatus_${idx}">En espera</span>
+                            <button type="button" class="btn-remove-queue-item" data-action="remove-queued-file" data-idx="${idx}" aria-label="Quitar archivo">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                            </button>
+                        </div>
                     `;
                     queueList.appendChild(row);
                 });

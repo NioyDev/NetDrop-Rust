@@ -108,6 +108,31 @@
     }
 
     /**
+     * Calcula y actualiza dinámicamente los contadores en los chips de filtro (Meta Astryx).
+     */
+    function updateCategoryCounts() {
+        const wrappers = document.querySelectorAll('.file-item-wrapper, .file-item-card:not(.file-item-wrapper .file-item-card)');
+        const counts = { all: wrappers.length, image: 0, doc: 0, media: 0, code: 0 };
+
+        wrappers.forEach(w => {
+            const ext = (w.getAttribute('data-type') || '').toLowerCase();
+            if (checkCategoryMatch(ext, 'image')) counts.image++;
+            if (checkCategoryMatch(ext, 'doc')) counts.doc++;
+            if (checkCategoryMatch(ext, 'media')) counts.media++;
+            if (checkCategoryMatch(ext, 'code')) counts.code++;
+        });
+
+        document.querySelectorAll('.filter-chip').forEach(chip => {
+            const cat = chip.getAttribute('data-category');
+            if (cat && counts[cat] !== undefined) {
+                const label = chip.getAttribute('data-label') || chip.textContent.replace(/\s*\(\d+\)$/, '').trim();
+                chip.setAttribute('data-label', label);
+                chip.innerHTML = `${label} <span class="chip-count">${counts[cat]}</span>`;
+            }
+        });
+    }
+
+    /**
      * Inicialización al cargar el DOM.
      */
     function initIndex() {
@@ -115,6 +140,7 @@
         setupQuickDropzone();
         setupGlobalDragOverlay();
         initPinnedFiles();
+        updateCategoryCounts();
         setupTouchSwipeGestures();
         setupLiveSync();
         setupFab();

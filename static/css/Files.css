@@ -124,6 +124,9 @@
 }
 
 .filter-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
     padding: 6px 14px;
     border-radius: 20px;
     border: 1px solid var(--color-border);
@@ -133,6 +136,26 @@
     font-weight: 500;
     cursor: pointer;
     transition: all 0.15s ease;
+}
+
+.chip-count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    font-weight: 700;
+    min-width: 17px;
+    height: 17px;
+    padding: 0 4px;
+    border-radius: 999px;
+    background: var(--color-border);
+    color: var(--color-text-muted);
+    transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.filter-chip.active .chip-count {
+    background: var(--color-bg-base);
+    color: var(--color-text-heading);
 }
 
 .filter-chip:hover {

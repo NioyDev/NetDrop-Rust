@@ -346,7 +346,7 @@ fn redirect_302(location: &str) -> Response {
         .status(StatusCode::FOUND)
         .header(LOCATION, location)
         .body(Body::empty())
-        .unwrap()
+        .unwrap_or_else(|_| (StatusCode::FOUND).into_response())
 }
 
 // Equivale a upload de app.py
@@ -711,7 +711,12 @@ pub async fn eliminar(AxPath(raw_filename): AxPath<String>) -> impl IntoResponse
 
 // Equivale a update de app.py
 pub async fn update(State(state): State<Arc<AppState>>) -> impl IntoResponse {
+    let ip_local = sacar_ip();
+    let protocolo = if es_https() { "https" } else { "http" };
+
     let mut ctx = tera::Context::new();
+    ctx.insert("ip_local", &ip_local);
+    ctx.insert("protocolo", &protocolo);
     ctx.insert("request", &json!({ "path": "/update" }));
 
     match state.tera.render("Up_Data.html", &ctx) {
@@ -729,7 +734,12 @@ pub async fn update(State(state): State<Arc<AppState>>) -> impl IntoResponse {
 
 // Equivale a QR_Generador_Vista de app.py
 pub async fn qr_generador_vista(State(state): State<Arc<AppState>>) -> impl IntoResponse {
+    let ip_local = sacar_ip();
+    let protocolo = if es_https() { "https" } else { "http" };
+
     let mut ctx = tera::Context::new();
+    ctx.insert("ip_local", &ip_local);
+    ctx.insert("protocolo", &protocolo);
     ctx.insert("request", &json!({ "path": "/qrgenerator" }));
 
     match state.tera.render("Qr_Generator.html", &ctx) {

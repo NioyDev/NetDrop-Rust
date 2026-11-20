@@ -18,6 +18,36 @@
     }
 
     /**
+     * Valida la sintaxis del JSON en tiempo real en el editor.
+     */
+    function validateJsonLive() {
+        const textarea = document.getElementById('ThemeJsonInput');
+        const badge = document.getElementById('JsonValidationBadge');
+        if (!textarea || !badge) return;
+
+        const val = textarea.value.trim();
+        if (!val) {
+            badge.textContent = 'Pendiente';
+            badge.className = 'json-badge';
+            return;
+        }
+
+        try {
+            const parsed = JSON.parse(val);
+            if (parsed.bgBase && parsed.accent) {
+                badge.textContent = '✓ JSON Válido';
+                badge.className = 'json-badge valid';
+            } else {
+                badge.textContent = '⚠️ Faltan claves (bgBase, accent)';
+                badge.className = 'json-badge invalid';
+            }
+        } catch (e) {
+            badge.textContent = '⚠️ Error de sintaxis';
+            badge.className = 'json-badge invalid';
+        }
+    }
+
+    /**
      * Configura escuchadores de eventos para la página de ajustes.
      */
     function setupEventListeners() {
@@ -25,6 +55,12 @@
         window.addEventListener('theme-changed', () => {
             renderThemeGrid();
         });
+
+        const jsonInput = document.getElementById('ThemeJsonInput');
+        if (jsonInput) {
+            jsonInput.addEventListener('input', validateJsonLive);
+            validateJsonLive();
+        }
 
         const fileInput = document.getElementById('ThemeFileInput');
         if (fileInput) {

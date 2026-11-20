@@ -43,6 +43,10 @@
             <p class="settings-desc">Descarga la plantilla base, personaliza tus propios colores o carga un archivo `.json` desde tu dispositivo para aplicarlo al instante.</p>
             
             <div class="json-editor-card">
+                <div class="json-editor-header">
+                    <span class="json-editor-title">Editor de Tema Personalizado</span>
+                    <span id="JsonValidationBadge" class="json-badge valid">✓ JSON Válido</span>
+                </div>
                 <textarea id="ThemeJsonInput" class="json-textarea" rows="10" spellcheck="false" placeholder='{
   "id": "mi-tema-personalizado",
   "name": "Mi Tema Personalizado",
@@ -144,5 +148,5 @@
 {% endblock %}
 
 {% block scripts %}
-<script src="/static/js/settings.js?v=8" defer></script>
+<script src="/static/js/settings.js?v=9" defer></script>
 {% endblock %}

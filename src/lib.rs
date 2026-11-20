@@ -317,4 +317,20 @@ mod tests {
                 .contains("default-src 'self'")
         );
     }
+
+    #[tokio::test]
+    async fn test_qrgenerator_view_renders_correctly() {
+        let app = setup_test_app();
+        let req = Request::builder().uri("/qrgenerator").body(Body::empty()).unwrap();
+        let res = app.oneshot(req).await.unwrap();
+        assert_eq!(res.status(), StatusCode::OK);
+    }
+
+    #[test]
+    fn test_secure_filename_comprehensive() {
+        use crate::funciones::configuracion::secure_filename;
+        assert_eq!(secure_filename("../../../etc/passwd"), "passwd");
+        assert_eq!(secure_filename("test\0null.txt"), "testnull.txt");
+        assert_eq!(secure_filename("archivo con espacios.png"), "archivo_con_espacios.png");
+    }
 }
