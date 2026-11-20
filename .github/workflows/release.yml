@@ -98,15 +98,12 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Configurar Android SDK
-        uses: android-actions/setup-android@v3
-
       - name: Compilar APK con Android Build Tools
         shell: bash
         run: |
           mkdir -p dist android/build_temp/compiled_res android/build_temp/gen android/build_temp/classes android/build_temp/dex
           
-          BUILD_TOOLS=$(find $ANDROID_HOME/build-tools -mindepth 1 -maxdepth 1 | sort -V | tail -n 1)
+          export ANDROID_HOME=${ANDROID_HOME:-/usr/local/lib/android/sdk}
           ANDROID_JAR=$(find $ANDROID_HOME/platforms -name "android.jar" | sort -V | tail -n 1)
           
           echo "Build tools: $BUILD_TOOLS"
