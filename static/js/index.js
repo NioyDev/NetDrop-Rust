@@ -13,6 +13,100 @@
     let isUploading = false;
     let dragCounter = 0;
 
+    const PINNED_STORAGE_KEY = 'netdrop_pinned_files';
+
+    /**
+     * Obtiene la lista de nombres de archivos fijados desde localStorage.
+     * @returns {string[]}
+     */
+    function getPinnedFiles() {
+        try {
+            const raw = localStorage.getItem(PINNED_STORAGE_KEY);
+            return raw ? JSON.parse(raw) : [];
+        } catch (e) {
+            return [];
+        }
+    }
+
+    /**
+     * Guarda la lista de archivos fijados en localStorage.
+     * @param {string[]} list 
+     */
+    function savePinnedFiles(list) {
+        try {
+            localStorage.setItem(PINNED_STORAGE_KEY, JSON.stringify(list));
+        } catch (e) {}
+    }
+
+    /**
+     * Alterna el estado fijado de un archivo (Pin / Unpin).
+     * @param {string} filename 
+     * @param {HTMLElement} wrapper 
+     */
+    function togglePinFile(filename, wrapper) {
+        let pinned = getPinnedFiles();
+        const isPinned = pinned.includes(filename);
+
+        if (isPinned) {
+            pinned = pinned.filter(f => f !== filename);
+            savePinnedFiles(pinned);
+            wrapper.classList.remove('is-pinned');
+            const pinLabel = wrapper.querySelector('.pin-label-text');
+            if (pinLabel) pinLabel.textContent = 'Fijar';
+            if (window.showToast) window.showToast(`Archivo "${filename}" desfijado`);
+        } else {
+            pinned.unshift(filename);
+            savePinnedFiles(pinned);
+            wrapper.classList.add('is-pinned');
+            const pinLabel = wrapper.querySelector('.pin-label-text');
+            if (pinLabel) pinLabel.textContent = 'Desfijar';
+            if (window.showToast) window.showToast(`📌 Archivo "${filename}" fijado al inicio`);
+        }
+
+        reorderPinnedFiles();
+    }
+
+    /**
+     * Reordena los elementos en el DOM para situar los archivos fijados al inicio.
+     */
+    function reorderPinnedFiles() {
+        const listBody = document.getElementById('FileListBody');
+        if (!listBody) return;
+        const pinned = getPinnedFiles();
+        const wrappers = Array.from(listBody.querySelectorAll('.file-item-wrapper'));
+
+        wrappers.sort((a, b) => {
+            const fileA = a.getAttribute('data-filename') || '';
+            const fileB = b.getAttribute('data-filename') || '';
+            const idxA = pinned.indexOf(fileA);
+            const idxB = pinned.indexOf(fileB);
+
+            if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+            if (idxA !== -1) return -1;
+            if (idxB !== -1) return 1;
+            return 0;
+        });
+
+        wrappers.forEach(w => listBody.appendChild(w));
+    }
+
+    /**
+     * Inicializa los estados visuales de los archivos fijados al arrancar la vista.
+     */
+    function initPinnedFiles() {
+        const pinned = getPinnedFiles();
+        const wrappers = document.querySelectorAll('.file-item-wrapper');
+        wrappers.forEach(wrapper => {
+            const filename = wrapper.getAttribute('data-filename');
+            if (filename && pinned.includes(filename)) {
+                wrapper.classList.add('is-pinned');
+                const pinLabel = wrapper.querySelector('.pin-label-text');
+                if (pinLabel) pinLabel.textContent = 'Desfijar';
+            }
+        });
+        reorderPinnedFiles();
+    }
+
     /**
      * Inicialización al cargar el DOM.
      */
@@ -20,6 +114,7 @@
         setupSearchInput();
         setupQuickDropzone();
         setupGlobalDragOverlay();
+        initPinnedFiles();
         setupTouchSwipeGestures();
         setupLiveSync();
         setupFab();
@@ -48,30 +143,30 @@
         const searchInput = document.getElementById('SearchInput');
         const clearBtn = document.getElementById('ClearSearchBtn');
         const query = (searchInput ? searchInput.value : '').toLowerCase().trim();
-        const cards = document.querySelectorAll('.file-item-card');
+        const items = document.querySelectorAll('.file-item-wrapper, .file-item-card:not(.file-item-wrapper .file-item-card)');
         let visibleCount = 0;
 
         if (clearBtn) {
             clearBtn.style.display = query ? 'inline-flex' : 'none';
         }
 
-        cards.forEach(card => {
-            const name = card.getAttribute('data-name') || '';
-            const type = card.getAttribute('data-type') || '';
+        items.forEach(item => {
+            const name = item.getAttribute('data-name') || '';
+            const type = item.getAttribute('data-type') || '';
             const matchesQuery = !query || name.includes(query);
             const matchesCategory = checkCategoryMatch(type, currentFilterType);
 
             if (matchesQuery && matchesCategory) {
-                card.style.display = 'flex';
+                item.style.display = 'block';
                 visibleCount++;
             } else {
-                card.style.display = 'none';
+                item.style.display = 'none';
             }
         });
 
         const noResults = document.getElementById('NoSearchResults');
         if (noResults) {
-            noResults.style.display = (visibleCount === 0 && cards.length > 0) ? 'block' : 'none';
+            noResults.style.display = (visibleCount === 0 && items.length > 0) ? 'block' : 'none';
         }
     }
 
@@ -302,50 +397,152 @@
     }
 
     /**
-     * Configura gestos de deslizamiento táctil horizontal en móviles.
+     * Configura gestos táctiles y de arrastre horizontal en móviles (SkillNexthezia)
+     * - Deslizar a la DERECHA: Eliminar archivo (Revela fondo rojo con icono de basura)
+     * - Deslizar a la IZQUIERDA: Fijar archivo al inicio (Revela fondo ámbar con icono de pin)
      */
     function setupTouchSwipeGestures() {
-        const cards = document.querySelectorAll('.file-item-card[data-touch-swipe="true"]');
+        const wrappers = document.querySelectorAll('.file-item-wrapper[data-touch-swipe="true"]');
 
-        cards.forEach(card => {
+        wrappers.forEach(wrapper => {
+            const card = wrapper.querySelector('.file-item-card');
+            const deleteReveal = wrapper.querySelector('.swipe-reveal-delete');
+            const pinReveal = wrapper.querySelector('.swipe-reveal-pin');
+            if (!card || wrapper.dataset.swipeInitialized === 'true') return;
+            wrapper.dataset.swipeInitialized = 'true';
+
             let startX = 0;
             let startY = 0;
             let deltaX = 0;
+            let isSwiping = false;
+            let pointerActive = false;
 
-            card.addEventListener('touchstart', (e) => {
-                const touch = e.touches[0];
-                startX = touch.clientX;
-                startY = touch.clientY;
+            const onStart = (clientX, clientY, target) => {
+                if (target && target.closest('button, a, input, select, .file-actions-bar')) return false;
+                startX = clientX;
+                startY = clientY;
                 deltaX = 0;
-                card.classList.add('swiping');
+                isSwiping = false;
+                pointerActive = true;
+                return true;
+            };
+
+            const onMove = (clientX, clientY, cancelable, e) => {
+                if (!pointerActive) return;
+                const currentDeltaX = clientX - startX;
+                const currentDeltaY = clientY - startY;
+
+                if (!isSwiping) {
+                    if (Math.abs(currentDeltaX) > 8 && Math.abs(currentDeltaX) > Math.abs(currentDeltaY)) {
+                        isSwiping = true;
+                    } else if (Math.abs(currentDeltaY) > 8) {
+                        pointerActive = false;
+                        return; // Scroll vertical natural
+                    }
+                }
+
+                if (isSwiping) {
+                    deltaX = currentDeltaX;
+                    if (cancelable && e && e.cancelable) e.preventDefault();
+
+                    card.style.transition = 'none';
+                    card.style.transform = `translateX(${deltaX * 0.72}px)`;
+
+                    if (deltaX > 0) {
+                        // Deslizando a la DERECHA -> Revela acción BORRAR (a la izquierda)
+                        if (deleteReveal) {
+                            deleteReveal.style.opacity = String(Math.min(1, deltaX / 45));
+                            deleteReveal.style.transform = deltaX >= 75 ? 'scale(1.08)' : 'scale(1)';
+                        }
+                        if (pinReveal) {
+                            pinReveal.style.opacity = '0';
+                        }
+                    } else if (deltaX < 0) {
+                        // Deslizando a la IZQUIERDA -> Revela acción FIJAR (a la derecha)
+                        if (pinReveal) {
+                            pinReveal.style.opacity = String(Math.min(1, Math.abs(deltaX) / 45));
+                            pinReveal.style.transform = Math.abs(deltaX) >= 75 ? 'scale(1.08)' : 'scale(1)';
+                        }
+                        if (deleteReveal) {
+                            deleteReveal.style.opacity = '0';
+                        }
+                    }
+                }
+            };
+
+            const onEnd = () => {
+                if (!pointerActive) return;
+                pointerActive = false;
+
+                if (!isSwiping) return;
+                isSwiping = false;
+
+                card.style.transition = 'transform 0.22s cubic-bezier(0.16, 1, 0.3, 1)';
+                card.style.transform = 'translateX(0)';
+
+                setTimeout(() => {
+                    if (deleteReveal) {
+                        deleteReveal.style.opacity = '0';
+                        deleteReveal.style.transform = 'scale(0.9)';
+                    }
+                    if (pinReveal) {
+                        pinReveal.style.opacity = '0';
+                        pinReveal.style.transform = 'scale(0.9)';
+                    }
+                }, 220);
+
+                const filename = wrapper.getAttribute('data-filename') || card.getAttribute('data-filename');
+                if (!filename) return;
+
+                if (deltaX > 75) {
+                    // Acción DERECHA: Borrar
+                    openDeleteSheet(filename);
+                } else if (deltaX < -75) {
+                    // Acción IZQUIERDA: Fijar / Desfijar
+                    togglePinFile(filename, wrapper);
+                }
+            };
+
+            // Soporte Pointer Events (Touch, Mouse, Pen unificados)
+            card.addEventListener('pointerdown', (e) => {
+                if (onStart(e.clientX, e.clientY, e.target)) {
+                    if (card.setPointerCapture) {
+                        try { card.setPointerCapture(e.pointerId); } catch (_) {}
+                    }
+                }
+            });
+
+            card.addEventListener('pointermove', (e) => {
+                onMove(e.clientX, e.clientY, true, e);
+            });
+
+            card.addEventListener('pointerup', (e) => {
+                if (card.releasePointerCapture) {
+                    try { card.releasePointerCapture(e.pointerId); } catch (_) {}
+                }
+                onEnd();
+            });
+
+            card.addEventListener('pointercancel', (e) => {
+                if (card.releasePointerCapture) {
+                    try { card.releasePointerCapture(e.pointerId); } catch (_) {}
+                }
+                onEnd();
+            });
+
+            // Fallback Touch Events
+            card.addEventListener('touchstart', (e) => {
+                const t = e.touches[0];
+                if (t) onStart(t.clientX, t.clientY, e.target);
             }, { passive: true });
 
             card.addEventListener('touchmove', (e) => {
-                const touch = e.touches[0];
-                deltaX = touch.clientX - startX;
-                const deltaY = touch.clientY - startY;
+                const t = e.touches[0];
+                if (t) onMove(t.clientX, t.clientY, true, e);
+            }, { passive: false });
 
-                // Solo desplazar si el movimiento es prioritariamente horizontal
-                if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 10) {
-                    card.style.transform = `translateX(${deltaX * 0.6}px)`;
-                }
-            }, { passive: true });
-
-            card.addEventListener('touchend', () => {
-                card.classList.remove('swiping');
-                card.style.transform = 'translateX(0)';
-
-                const filename = card.querySelector('[data-filename]')?.getAttribute('data-filename');
-                if (!filename) return;
-
-                if (deltaX < -75) {
-                    // Deslizar a la izquierda: acción de eliminar
-                    openDeleteSheet(filename);
-                } else if (deltaX > 75) {
-                    // Deslizar a la derecha: acción de copiar enlace
-                    copyFileLink(filename);
-                }
-            });
+            card.addEventListener('touchend', onEnd);
+            card.addEventListener('touchcancel', onEnd);
         });
     }
 
@@ -563,4 +760,7 @@
     // Exponer para interacción unificada de cierre y gestos
     window.closePreviewModal = closePreviewModal;
     window.closeDeleteModal = closeDeleteSheet;
+    window.togglePinFile = togglePinFile;
+    window.reorderPinnedFiles = reorderPinnedFiles;
+    window.getPinnedFiles = getPinnedFiles;
 })();

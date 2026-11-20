@@ -51,67 +51,96 @@
     <div class="file-list-container" id="FileListContainer">
         <div class="file-list-header">
             <span class="file-count-label">{{ File|length }} {% if File|length == 1 %}archivo disponible{% else %}archivos disponibles{% endif %}</span>
-            <span class="file-mobile-hint">Desliza una tarjeta para acciones rápidas</span>
+            <span class="file-mobile-hint">
+                <span class="hint-pill hint-pill-delete">➔ Deslizar para Borrar</span>
+                <span class="hint-pill hint-pill-pin">⬅ Deslizar para Fijar</span>
+            </span>
         </div>
         
         <div class="file-list-body" id="FileListBody">
             {% for file_item in File %}
             {% set ext = file_item.tipo %}
-            <div class="file-item-card" 
+            <div class="file-item-wrapper"
                  data-touch-swipe="true"
                  data-name="{{ file_item.nombre|lower }}" 
-                 data-type="{{ ext }}">
+                 data-type="{{ ext }}"
+                 data-filename="{{ file_item.nombre }}">
                 
-                <div class="file-item-main" data-action="preview" data-filename="{{ file_item.nombre }}" data-type="{{ ext }}">
-                    <div class="file-icon-box type-{{ ext }}">
-                        {% if ext in ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'heic'] %}
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-                        {% elif ext in ['mp4', 'webm', 'ogg', 'mov', 'avi', 'mkv'] %}
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
-                        {% elif ext in ['mp3', 'wav', 'aac', 'flac', 'm4a', 'opus'] %}
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
-                        {% elif ext in ['py', 'js', 'html', 'css', 'json', 'java', 'c', 'cpp', 'sh', 'sql', 'xml'] %}
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
-                        {% elif ext in ['zip', 'rar', '7z', 'tar', 'gz'] %}
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
-                        {% else %}
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-                        {% endif %}
+                <!-- Capa de Fondo para Revelar Acciones Táctiles al Deslizar -->
+                <div class="file-swipe-actions-bg" aria-hidden="true">
+                    <!-- Revelado al deslizar a la DERECHA: Borrar -->
+                    <div class="swipe-reveal-action swipe-reveal-delete">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                        <span>Borrar</span>
                     </div>
+                    <!-- Revelado al deslizar a la IZQUIERDA: Fijar -->
+                    <div class="swipe-reveal-action swipe-reveal-pin">
+                        <span class="pin-label-text">Fijar</span>
+                        <svg class="pin-svg-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="17" x2="12" y2="22"/><path d="M5 17h14v-2l-2-2V5a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v8l-2 2v2z"/></svg>
+                    </div>
+                </div>
 
-                    <div class="file-info">
-                        <span class="file-title-text" title="{{ file_item.nombre }}">{{ file_item.nombre }}</span>
-                        <div class="file-meta-subtext">
-                            <span class="meta-tag">{% if file_item.tipo %}{{ file_item.tipo | upper }}{% else %}ARCHIVO{% endif %}</span>
-                            <span class="meta-dot">•</span>
-                            <span class="meta-size">{% if file_item.tamano_legible %}{{ file_item.tamano_legible }}{% else %}N/A{% endif %}</span>
-                            <span class="meta-dot">•</span>
-                            <span class="meta-date">{{ file_item.fecha }}</span>
+                <div class="file-item-card" 
+                     data-name="{{ file_item.nombre|lower }}" 
+                     data-type="{{ ext }}">
+                    
+                    <div class="file-item-main" data-action="preview" data-filename="{{ file_item.nombre }}" data-type="{{ ext }}">
+                        <div class="file-icon-box type-{{ ext }}">
+                            {% if ext in ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'heic'] %}
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                            {% elif ext in ['mp4', 'webm', 'ogg', 'mov', 'avi', 'mkv'] %}
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
+                            {% elif ext in ['mp3', 'wav', 'aac', 'flac', 'm4a', 'opus'] %}
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+                            {% elif ext in ['py', 'js', 'html', 'css', 'json', 'java', 'c', 'cpp', 'sh', 'sql', 'xml'] %}
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+                            {% elif ext in ['zip', 'rar', '7z', 'tar', 'gz'] %}
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+                            {% else %}
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                            {% endif %}
+                        </div>
+
+                        <div class="file-info">
+                            <div class="file-title-row">
+                                <span class="file-title-text" title="{{ file_item.nombre }}">{{ file_item.nombre }}</span>
+                                <span class="pinned-badge" title="Archivo fijado al inicio">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="17" x2="12" y2="22"/><path d="M5 17h14v-2l-2-2V5a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v8l-2 2v2z"/></svg>
+                                    <span>Fijado</span>
+                                </span>
+                            </div>
+                            <div class="file-meta-subtext">
+                                <span class="meta-tag">{% if file_item.tipo %}{{ file_item.tipo | upper }}{% else %}ARCHIVO{% endif %}</span>
+                                <span class="meta-dot">•</span>
+                                <span class="meta-size">{% if file_item.tamano_legible %}{{ file_item.tamano_legible }}{% else %}N/A{% endif %}</span>
+                                <span class="meta-dot">•</span>
+                                <span class="meta-date">{{ file_item.fecha }}</span>
+                            </div>
                         </div>
                     </div>
+
+                    <div class="file-actions-bar">
+                        <button type="button" class="btn-action-icon preview" data-action="preview" data-filename="{{ file_item.nombre }}" data-type="{{ ext }}" title="Ver vista previa">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                            <span>Ver</span>
+                        </button>
+
+                        <button type="button" class="btn-action-icon copy" data-action="copy-link" data-filename="{{ file_item.nombre }}" title="Copiar enlace directo">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+                            <span>Copiar</span>
+                        </button>
+
+                        <a href="/descarga/{{ file_item.nombre }}" class="btn-action-icon download" title="Descargar archivo">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                            <span>Bajar</span>
+                        </a>
+
+                        <button type="button" class="btn-action-icon delete" data-action="delete-file" data-filename="{{ file_item.nombre }}" title="Eliminar archivo">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                        </button>
+                    </div>
+
                 </div>
-
-                <div class="file-actions-bar">
-                    <button type="button" class="btn-action-icon preview" data-action="preview" data-filename="{{ file_item.nombre }}" data-type="{{ ext }}" title="Ver vista previa">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                        <span>Ver</span>
-                    </button>
-
-                    <button type="button" class="btn-action-icon copy" data-action="copy-link" data-filename="{{ file_item.nombre }}" title="Copiar enlace directo">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
-                        <span>Copiar</span>
-                    </button>
-
-                    <a href="/descarga/{{ file_item.nombre }}" class="btn-action-icon download" title="Descargar archivo">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                        <span>Bajar</span>
-                    </a>
-
-                    <button type="button" class="btn-action-icon delete" data-action="delete-file" data-filename="{{ file_item.nombre }}" title="Eliminar archivo">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-                    </button>
-                </div>
-
             </div>
             {% endfor %}
         </div>
@@ -183,5 +212,5 @@
 {% endblock %}
 
 {% block scripts %}
-<script src="/static/js/index.js?v=9" defer></script>
+<script src="/static/js/index.js?v=11" defer></script>
 {% endblock %}

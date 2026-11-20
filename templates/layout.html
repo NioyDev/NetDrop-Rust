@@ -4,27 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>NetDrop - Compartir Archivos en Red Local</title>
-    <link rel="stylesheet" href="/static/css/variables.css?v=9">
-    <link rel="stylesheet" href="/static/css/layout-variables.css?v=9">
-    <link rel="stylesheet" href="/static/css/global.css?v=9">
-    <link rel="stylesheet" href="/static/css/componentes.css?v=9">
-    <link rel="stylesheet" href="/static/css/Files.css?v=9">
+    <link rel="stylesheet" href="/static/css/variables.css?v=11">
+    <link rel="stylesheet" href="/static/css/layout-variables.css?v=11">
+    <link rel="stylesheet" href="/static/css/global.css?v=11">
+    <link rel="stylesheet" href="/static/css/componentes.css?v=11">
+    <link rel="stylesheet" href="/static/css/Files.css?v=11">
     <link rel="icon" href="/static/Logo/logo-sin-fondo.png" type="image/png">
     <link rel="shortcut icon" href="/static/Logo/logo-sin-fondo.png" type="image/png">
     <link rel="apple-touch-icon" href="/static/Logo/logo-sin-fondo.png">
-    <script>
-        (function() {
-            function blockContextMenu(e) {
-                e.preventDefault();
-                e.stopPropagation();
-                return false;
-            }
-            window.addEventListener('contextmenu', blockContextMenu, true);
-            document.addEventListener('contextmenu', blockContextMenu, true);
-            document.oncontextmenu = blockContextMenu;
-        })();
-    </script>
-    <script src="/static/js/theme-engine.js?v=9"></script>
+    <script src="/static/js/theme-engine.js?v=11"></script>
 </head>
 <body oncontextmenu="return false;">
 
@@ -125,7 +113,7 @@
     <!-- Toast Notifications Container -->
     <div id="toastContainer" class="toast-container" aria-live="polite"></div>
 
-    <script src="/static/js/global.js?v=9" defer></script>
+    <script src="/static/js/global.js?v=11" defer></script>
     {% block scripts %}{% endblock %}
 </body>
 </html>
