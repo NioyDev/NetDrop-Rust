@@ -57,10 +57,17 @@
      * Carga el archivo de temas predeterminados del servidor.
      */
     async function loadThemes() {
-        try {
-            const res = await fetch('/static/json/themes.json');
-            defaultThemes = await res.json();
+        if (Array.isArray(window.DEFAULT_THEMES) && window.DEFAULT_THEMES.length > 0) {
+            defaultThemes = window.DEFAULT_THEMES;
             renderThemeGrid();
+        }
+
+        try {
+            const res = await fetch('/static/json/themes.json?t=' + Date.now());
+            if (res.ok) {
+                defaultThemes = await res.json();
+                renderThemeGrid();
+            }
         } catch (e) {
             console.error('Error al cargar temas:', e);
         }
