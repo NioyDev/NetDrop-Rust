@@ -228,18 +228,180 @@
     }
 
     /**
+     * Cierra de manera uniforme cualquier modal o bottom sheet activo.
+     * @param {HTMLElement} modal 
+     */
+    function closeModal(modal) {
+        if (!modal) return;
+        const content = modal.querySelector('.modal-content');
+        if (content) {
+            content.style.transform = '';
+            content.style.transition = '';
+        }
+
+        if (modal.id === 'previewModal') {
+            if (typeof window.closePreviewModal === 'function') {
+                window.closePreviewModal();
+            } else {
+                modal.classList.remove('active');
+                const body = document.getElementById('previewBody');
+                if (body) body.innerHTML = '';
+                document.body.classList.remove('sheet-open');
+            }
+        } else if (modal.id === 'deleteModal') {
+            if (typeof window.closeDeleteModal === 'function') {
+                window.closeDeleteModal();
+            } else {
+                modal.classList.remove('active');
+                document.body.classList.remove('sheet-open');
+            }
+        } else if (modal.id === 'qrModal') {
+            closeQrSheet();
+        } else {
+            modal.classList.remove('active');
+            modal.style.display = 'none';
+            document.body.classList.remove('sheet-open');
+        }
+    }
+
+    /**
+     * Configura el gesto táctil y de arrastre hacia abajo (Swipe Down to Dismiss)
+     * para todas las hojas inferiores / modales de la interfaz.
+     */
+    function setupModalGestures() {
+        const modals = document.querySelectorAll('.modal');
+        modals.forEach(modal => {
+            const content = modal.querySelector('.modal-content');
+            if (!content || modal.dataset.gestureAttached === 'true') return;
+            modal.dataset.gestureAttached = 'true';
+
+            let startY = 0;
+            let currentY = 0;
+            let isDragging = false;
+            let isEligible = false;
+
+            const onTouchStart = (e) => {
+                if (!modal.classList.contains('active') && getComputedStyle(modal).display === 'none') {
+                    return;
+                }
+                if (e.target.closest('button, a, input, select, textarea, .modal-close')) {
+                    return;
+                }
+
+                const handle = modal.querySelector('.bottom-sheet-handle');
+                const header = modal.querySelector('.modal-header-row');
+                const isHandle = handle && handle.contains(e.target);
+                const isHeader = header && header.contains(e.target);
+
+                const scrollable = e.target.closest('.preview-body, .modal-content, .qr-modal-body');
+                const isAtTop = !scrollable || scrollable.scrollTop <= 2;
+
+                if (isHandle || isHeader || isAtTop) {
+                    isEligible = true;
+                    startY = e.touches ? e.touches[0].clientY : e.clientY;
+                    currentY = startY;
+                    isDragging = false;
+                }
+            };
+
+            const onTouchMove = (e) => {
+                if (!isEligible) return;
+
+                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                const deltaY = clientY - startY;
+
+                if (deltaY > 6) {
+                    isDragging = true;
+                    if (e.cancelable) e.preventDefault();
+                    content.style.transition = 'none';
+                    content.style.transform = `translateY(${deltaY}px)`;
+                } else if (deltaY < 0 && isDragging) {
+                    content.style.transform = 'translateY(0)';
+                }
+            };
+
+            const onTouchEnd = () => {
+                if (!isEligible) return;
+                isEligible = false;
+
+                if (!isDragging) return;
+                isDragging = false;
+
+                const deltaY = currentY - startY;
+                const threshold = 70;
+
+                if (deltaY > threshold) {
+                    content.style.transition = 'transform 0.22s cubic-bezier(0.16, 1, 0.3, 1)';
+                    content.style.transform = 'translateY(100%)';
+                    setTimeout(() => {
+                        closeModal(modal);
+                        content.style.transition = '';
+                        content.style.transform = '';
+                    }, 220);
+                } else {
+                    content.style.transition = 'transform 0.2s cubic-bezier(0.16, 1, 0.3, 1)';
+                    content.style.transform = 'translateY(0)';
+                    setTimeout(() => {
+                        content.style.transition = '';
+                        content.style.transform = '';
+                    }, 200);
+                }
+            };
+
+            const updatePos = (e) => {
+                if (isEligible) {
+                    currentY = e.touches ? e.touches[0].clientY : e.clientY;
+                }
+            };
+
+            // Eventos táctiles
+            content.addEventListener('touchstart', onTouchStart, { passive: true });
+            content.addEventListener('touchmove', (e) => {
+                updatePos(e);
+                onTouchMove(e);
+            }, { passive: false });
+            content.addEventListener('touchend', onTouchEnd);
+            content.addEventListener('touchcancel', onTouchEnd);
+
+            // Soporte para arrastre con puntero/ratón en el handle
+            const handle = modal.querySelector('.bottom-sheet-handle');
+            if (handle) {
+                handle.addEventListener('mousedown', (e) => {
+                    isEligible = true;
+                    startY = e.clientY;
+                    currentY = startY;
+                    isDragging = false;
+
+                    const onMouseMove = (ev) => {
+                        currentY = ev.clientY;
+                        const deltaY = currentY - startY;
+                        if (deltaY > 4) {
+                            isDragging = true;
+                            content.style.transition = 'none';
+                            content.style.transform = `translateY(${deltaY}px)`;
+                        }
+                    };
+
+                    const onMouseUp = () => {
+                        window.removeEventListener('mousemove', onMouseMove);
+                        window.removeEventListener('mouseup', onMouseUp);
+                        onTouchEnd();
+                    };
+
+                    window.addEventListener('mousemove', onMouseMove);
+                    window.addEventListener('mouseup', onMouseUp);
+                });
+            }
+        });
+    }
+
+    /**
      * Maneja el clic en el backdrop para cerrar hojas o modales.
      * @param {MouseEvent} event 
      */
     function handleBackdropClick(event) {
-        const qrModal = document.getElementById('qrModal');
-        if (event.target === qrModal) {
-            closeQrSheet();
-        }
-
-        const downloadModal = document.getElementById('downloadModal');
-        if (event.target === downloadModal) {
-            downloadModal.style.display = 'none';
+        if (event.target && event.target.classList && event.target.classList.contains('modal')) {
+            closeModal(event.target);
         }
     }
 
@@ -249,9 +411,10 @@
      */
     function handleKeydown(event) {
         if (event.key === 'Escape') {
-            closeQrSheet();
-            const downloadModal = document.getElementById('downloadModal');
-            if (downloadModal) downloadModal.style.display = 'none';
+            const activeModal = document.querySelector('.modal.active, .modal[style*="display: flex"], #downloadModal[style*="display: block"]');
+            if (activeModal) {
+                closeModal(activeModal);
+            }
         }
 
         // Bloquear atajos de depuración web en la aplicación nativa (F12, Ctrl+U, Ctrl+Shift+I, etc.)
@@ -265,24 +428,36 @@
     }
 
     /**
-     * Deshabilita el menú contextual del navegador (clic derecho) para brindar
-     * una experiencia limpia de aplicación nativa.
+     * Deshabilita de manera absoluta el menú contextual del navegador (clic derecho)
+     * en el webview y en cualquier pantalla.
      * @param {MouseEvent} event 
      */
     function handleContextMenu(event) {
         event.preventDefault();
+        event.stopPropagation();
+        return false;
     }
 
     // Inicialización de escuchadores globales
     document.addEventListener('click', handleActionClick);
     window.addEventListener('click', handleBackdropClick);
     window.addEventListener('keydown', handleKeydown);
-    window.addEventListener('contextmenu', handleContextMenu);
+    window.addEventListener('contextmenu', handleContextMenu, true);
+    document.addEventListener('contextmenu', handleContextMenu, true);
+
+    // Inicializar gestos al cargar el documento
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', setupModalGestures);
+    } else {
+        setupModalGestures();
+    }
 
     // Exportación global en el objeto window
     window.showToast = showToast;
     window.openQrModal = openQrSheet;
     window.closeQrModal = closeQrSheet;
+    window.closeModal = closeModal;
+    window.setupModalGestures = setupModalGestures;
     window.copyIpAddress = copyIpAddress;
     window.toggleQuickTheme = toggleQuickTheme;
 })();

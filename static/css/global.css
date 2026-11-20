@@ -218,11 +218,30 @@ body.sheet-open {
 
 .bottom-sheet-handle {
     display: none;
-    width: 40px;
-    height: 4px;
-    border-radius: 2px;
+    width: 44px;
+    height: 5px;
+    border-radius: 3px;
     background-color: var(--color-border-hover);
-    margin: 0 auto 16px auto;
+    margin: 2px auto 16px auto;
+    cursor: grab;
+    touch-action: none;
+    position: relative;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+.bottom-sheet-handle::before {
+    content: '';
+    position: absolute;
+    top: -12px;
+    bottom: -12px;
+    left: -24px;
+    right: -24px;
+}
+
+.bottom-sheet-handle:active {
+    cursor: grabbing;
+    background-color: var(--color-accent);
 }
 
 .modal-content {
@@ -671,6 +690,19 @@ select {
 
     .modal.active .modal-content {
         transform: translateY(0);
+    }
+
+    .modal-actions {
+        width: 100%;
+        display: flex;
+        gap: 12px;
+    }
+
+    .modal-actions .modal-btn,
+    .modal-actions a.modal-btn {
+        flex: 1;
+        text-align: center;
+        justify-content: center;
     }
 
     /* Áreas táctiles cómodas en botones */

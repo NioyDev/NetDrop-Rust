@@ -249,6 +249,20 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn test_static_assets_direct_navigation_blocked_in_production() {
+        std::env::remove_var("NETDROP_DEBUG");
+        let app = setup_test_app();
+        let req = Request::builder()
+            .uri("/static/css/global.css")
+            .header("sec-fetch-dest", "document")
+            .header("sec-fetch-mode", "navigate")
+            .body(Body::empty())
+            .unwrap();
+        let res = app.oneshot(req).await.unwrap();
+        assert_eq!(res.status(), StatusCode::FORBIDDEN);
+    }
+
+    #[tokio::test]
     async fn test_qr_endpoints() {
         let app = setup_test_app();
 

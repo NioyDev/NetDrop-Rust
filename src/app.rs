@@ -868,7 +868,43 @@ pub fn init_tera() -> Result<Tera, tera::Error> {
     Ok(tera)
 }
 
-pub async fn static_handler(AxPath(path): AxPath<String>) -> impl IntoResponse {
+pub async fn static_handler(
+    headers: HeaderMap,
+    AxPath(path): AxPath<String>,
+) -> impl IntoResponse {
+    let is_debug = std::env::var("NETDROP_DEBUG")
+        .map(|v| v == "1" || v.eq_ignore_ascii_case("true"))
+        .unwrap_or(false);
+
+    if !is_debug {
+        let has_doc_dest = headers
+            .get("sec-fetch-dest")
+            .and_then(|v| v.to_str().ok())
+            .map(|v| v.eq_ignore_ascii_case("document"))
+            .unwrap_or(false);
+        let has_nav_mode = headers
+            .get("sec-fetch-mode")
+            .and_then(|v| v.to_str().ok())
+            .map(|v| v.eq_ignore_ascii_case("navigate"))
+            .unwrap_or(false);
+        let accepts_html = headers
+            .get(axum::http::header::ACCEPT)
+            .and_then(|v| v.to_str().ok())
+            .map(|v| v.starts_with("text/html"))
+            .unwrap_or(false);
+
+        let is_direct_nav = has_doc_dest || has_nav_mode || accepts_html;
+
+        if is_direct_nav {
+            return (
+                StatusCode::FORBIDDEN,
+                [(CONTENT_TYPE, "text/plain; charset=utf-8")],
+                "Acceso directo a recursos estáticos no permitido en modo producción. Solo accesible mediante la interfaz de NetDrop o en modo depuración (NETDROP_DEBUG=1).",
+            )
+                .into_response();
+        }
+    }
+
     let clean_path = path.trim_start_matches('/');
     if let Some(content) = StaticAssets::get(clean_path) {
         let mime = mime_guess::from_path(clean_path)

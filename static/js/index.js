@@ -130,6 +130,7 @@
         downloadBtn.href = `/descarga/${encodeURIComponent(filename)}`;
         body.innerHTML = '<div class="preview-loading">Cargando vista previa...</div>';
         modal.classList.add('active');
+        document.body.classList.add('sheet-open');
 
         const fileUrl = `/archivo/${encodeURIComponent(filename)}`;
         renderPreviewContent(body, fileUrl, filename, ext);
@@ -194,6 +195,7 @@
         const body = document.getElementById('previewBody');
         if (modal) modal.classList.remove('active');
         if (body) body.innerHTML = '';
+        document.body.classList.remove('sheet-open');
     }
 
     /**
@@ -557,4 +559,8 @@
     } else {
         initIndex();
     }
+
+    // Exponer para interacción unificada de cierre y gestos
+    window.closePreviewModal = closePreviewModal;
+    window.closeDeleteModal = closeDeleteSheet;
 })();

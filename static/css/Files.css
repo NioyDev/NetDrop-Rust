@@ -378,6 +378,21 @@
     max-height: 85vh;
 }
 
+@media (max-width: 768px) {
+    .preview-modal-content {
+        max-width: 100% !important;
+        width: 100% !important;
+        border-radius: 20px 20px 0 0 !important;
+        border-bottom: none !important;
+        margin: 0 !important;
+        transform: translateY(100%);
+    }
+
+    .modal.active .preview-modal-content {
+        transform: translateY(0);
+    }
+}
+
 .preview-body {
     margin-top: 12px;
     margin-bottom: 16px;

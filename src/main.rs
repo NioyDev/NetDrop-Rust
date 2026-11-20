@@ -44,7 +44,7 @@ pub fn arrancar_webview(proto: &str, shared_state: Arc<AppState>) {
     let _webview = match WebViewBuilder::new()
         .with_url(&url)
         .with_devtools(false)
-        .with_initialization_script("window.addEventListener('contextmenu', function(e){ e.preventDefault(); });")
+        .with_initialization_script("window.addEventListener('contextmenu', function(e){ e.preventDefault(); e.stopPropagation(); return false; }, true);")
         .build(&window)
     {
         Ok(wv) => wv,
@@ -103,8 +103,10 @@ pub fn arrancar_webview(proto: &str, shared_state: Arc<AppState>) {
             let app_arg = format!("--app={url}");
             let size_arg = "--window-size=850,650";
 
+            let no_context_menu = "--disable-context-menu";
+
             if let Ok(mut child) = std::process::Command::new(path)
-                .args([&app_arg, size_arg, &user_data])
+                .args([&app_arg, size_arg, &user_data, no_context_menu])
                 .spawn()
             {
                 launched = true;
@@ -235,6 +237,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let args: Vec<String> = std::env::args().collect();
     let headless = args.iter().any(|a| a == "--headless" || a == "-h");
+    if args.iter().any(|a| a == "--debug" || a == "-d") {
+        std::env::set_var("NETDROP_DEBUG", "1");
+        println!("🛠️ Modo depuración activado (acceso directo a recursos estáticos habilitado).");
+    }
 
     if !headless {
         // 2. Levantamos la ventana de escritorio (arrancar_webview)
