@@ -97,5 +97,5 @@ assets = [
     ["target/release/netdrop", "usr/bin/netdrop", "755"],
     ["README.md", "usr/share/doc/netdrop-rust/README.md", "644"],
     ["distribucion/NetDrop.desktop", "usr/share/applications/NetDrop.desktop", "644"],
-    ["static/Logo/Logo.png", "usr/share/icons/hicolor/256x256/apps/netdrop.png", "644"],
+    ["static/Logo/logo-sin-fondo.png", "usr/share/icons/hicolor/256x256/apps/netdrop.png", "644"],
 ]
