@@ -292,36 +292,28 @@ mod tests {
         assert_eq!(res.status(), StatusCode::OK);
 
         let headers = res.headers();
-        assert_eq!(
-            headers.get("x-content-type-options").unwrap(),
-            "nosniff"
-        );
-        assert_eq!(
-            headers.get("x-frame-options").unwrap(),
-            "SAMEORIGIN"
-        );
+        assert_eq!(headers.get("x-content-type-options").unwrap(), "nosniff");
+        assert_eq!(headers.get("x-frame-options").unwrap(), "SAMEORIGIN");
         assert_eq!(
             headers.get("referrer-policy").unwrap(),
             "strict-origin-when-cross-origin"
         );
-        assert_eq!(
-            headers.get("x-xss-protection").unwrap(),
-            "1; mode=block"
-        );
-        assert!(
-            headers
-                .get("content-security-policy")
-                .unwrap()
-                .to_str()
-                .unwrap()
-                .contains("default-src 'self'")
-        );
+        assert_eq!(headers.get("x-xss-protection").unwrap(), "1; mode=block");
+        assert!(headers
+            .get("content-security-policy")
+            .unwrap()
+            .to_str()
+            .unwrap()
+            .contains("default-src 'self'"));
     }
 
     #[tokio::test]
     async fn test_qrgenerator_view_renders_correctly() {
         let app = setup_test_app();
-        let req = Request::builder().uri("/qrgenerator").body(Body::empty()).unwrap();
+        let req = Request::builder()
+            .uri("/qrgenerator")
+            .body(Body::empty())
+            .unwrap();
         let res = app.oneshot(req).await.unwrap();
         assert_eq!(res.status(), StatusCode::OK);
     }
@@ -331,6 +323,9 @@ mod tests {
         use crate::funciones::configuracion::secure_filename;
         assert_eq!(secure_filename("../../../etc/passwd"), "passwd");
         assert_eq!(secure_filename("test\0null.txt"), "testnull.txt");
-        assert_eq!(secure_filename("archivo con espacios.png"), "archivo_con_espacios.png");
+        assert_eq!(
+            secure_filename("archivo con espacios.png"),
+            "archivo_con_espacios.png"
+        );
     }
 }

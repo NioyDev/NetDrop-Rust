@@ -1,8 +1,8 @@
 use axum::body::Body;
 use axum::extract::{DefaultBodyLimit, Multipart, Path as AxPath, State};
 use axum::http::header::{
-    ACCEPT_RANGES, CACHE_CONTROL, CONTENT_DISPOSITION, CONTENT_LENGTH, CONTENT_RANGE, CONTENT_TYPE,
-    HeaderName, LOCATION,
+    HeaderName, ACCEPT_RANGES, CACHE_CONTROL, CONTENT_DISPOSITION, CONTENT_LENGTH, CONTENT_RANGE,
+    CONTENT_TYPE, LOCATION,
 };
 use axum::http::{HeaderMap, HeaderValue, Request, StatusCode};
 use axum::middleware::{self, Next};
@@ -878,10 +878,7 @@ pub fn init_tera() -> Result<Tera, tera::Error> {
     Ok(tera)
 }
 
-pub async fn static_handler(
-    headers: HeaderMap,
-    AxPath(path): AxPath<String>,
-) -> impl IntoResponse {
+pub async fn static_handler(headers: HeaderMap, AxPath(path): AxPath<String>) -> impl IntoResponse {
     let is_debug = std::env::var("NETDROP_DEBUG")
         .map(|v| v == "1" || v.eq_ignore_ascii_case("true"))
         .unwrap_or(false);

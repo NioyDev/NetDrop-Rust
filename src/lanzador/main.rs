@@ -114,7 +114,9 @@ impl MiApp {
             let _webview = WebViewBuilder::new()
                 .with_html(html)
                 .with_devtools(false)
-                .with_initialization_script("window.addEventListener('contextmenu', function(e){ e.preventDefault(); });")
+                .with_initialization_script(
+                    "window.addEventListener('contextmenu', function(e){ e.preventDefault(); });",
+                )
                 .with_ipc_handler(|req| match req.body().as_str() {
                     "open" => {
                         abrir_navegador();
