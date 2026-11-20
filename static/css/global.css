@@ -561,9 +561,9 @@ select {
     transform: scale(0.94);
 }
 
-/* Botón de Acción Flotante (FAB) en la Zona del Pulgar */
+/* Botón de Acción Flotante (FAB) en la Zona del Pulgar (Solo Móviles) */
 .app-fab {
-    display: none;
+    display: none !important;
     position: fixed;
     bottom: calc(68px + env(safe-area-inset-bottom));
     right: 18px;
@@ -633,8 +633,14 @@ select {
         display: flex;
     }
 
+    /* En teléfono: mostrar botón flotante (+) para subir con el pulgar */
     .app-fab {
-        display: flex;
+        display: flex !important;
+    }
+
+    /* En teléfono: ocultar la dropzone superior para no saturar la pantalla */
+    .quick-dropzone {
+        display: none !important;
     }
 
     /* Ocultar enlaces de navegación del header en móvil para no saturar */

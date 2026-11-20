@@ -15,9 +15,11 @@
 
 <div class="page-container" id="HomeContainer">
 
-    <!-- Subida Rápida en Homepage (UX Dropzone) -->
-    <div class="quick-dropzone" id="GlobalDropZone">
-        <input type="file" id="QuickFileInput" class="file-input-overlay" multiple aria-label="Seleccionar archivos para subir" />
+    <!-- Input de archivo persistente (manejado por Dropzone en PC y por FAB (+) en teléfono) -->
+    <input type="file" id="QuickFileInput" style="display: none;" multiple aria-label="Seleccionar archivos para subir" />
+
+    <!-- Subida Rápida en Homepage (Solo PC - Oculto en teléfono) -->
+    <div class="quick-dropzone" id="GlobalDropZone" role="button" tabindex="0" aria-label="Subir archivos arrastrando o haciendo clic">
         <div class="dropzone-content">
             <span class="dropzone-text">Arrastra un archivo aquí para compartirlo al instante</span>
             <span class="dropzone-subtext">o haz clic en el recuadro para explorar tus carpetas o fotos</span>
@@ -182,5 +184,5 @@
 {% endblock %}
 
 {% block scripts %}
-<script src="/static/js/index.js?v=5" defer></script>
+<script src="/static/js/index.js?v=7" defer></script>
 {% endblock %}
