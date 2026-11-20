@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#0f172a">
+
+    <!-- Vista de conexión inicial si no hay servidor configurado -->
+    <LinearLayout
+        android:id="@+id/connectView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:padding="28dp"
+        android:visibility="gone">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="NetDrop"
+            android:textSize="32sp"
+            android:textStyle="bold"
+            android:textColor="#ffffff"
+            android:layout_marginBottom="8dp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Compartir archivos en red local"
+            android:textSize="14sp"
+            android:textColor="#94a3b8"
+            android:layout_marginBottom="32dp" />
+
+        <EditText
+            android:id="@+id/ipEditText"
+            android:layout_width="match_parent"
+            android:layout_height="52dp"
+            android:background="#1e293b"
+            android:textColor="#ffffff"
+            android:textColorHint="#64748b"
+            android:hint="Ej. 192.168.0.85:5000"
+            android:inputType="textUri"
+            android:paddingHorizontal="16dp"
+            android:singleLine="true"
+            android:textSize="15sp"
+            android:layout_marginBottom="16dp" />
+
+        <Button
+            android:id="@+id/btnConnect"
+            android:layout_width="match_parent"
+            android:layout_height="50dp"
+            android:background="#4f46e5"
+            android:text="Conectar"
+            android:textColor="#ffffff"
+            android:textStyle="bold"
+            android:textSize="16sp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Abre NetDrop en tu PC o escanea el QR en pantalla"
+            android:textSize="12sp"
+            android:textColor="#64748b"
+            android:layout_marginTop="20dp"
+            android:gravity="center" />
+    </LinearLayout>
+
+    <!-- WebView principal -->
+    <WebView
+        android:id="@+id/mainWebView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+    <!-- Barra de progreso de carga -->
+    <ProgressBar
+        android:id="@+id/loadingProgress"
+        style="?android:attr/progressBarStyleHorizontal"
+        android:layout_width="match_parent"
+        android:layout_height="4dp"
+        android:layout_alignParentTop="true"
+        android:indeterminate="true"
+        android:visibility="gone" />
+
+</RelativeLayout>

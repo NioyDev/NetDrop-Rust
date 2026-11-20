@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">NetDrop</string>
+    <string name="connect_title">Conectar a NetDrop</string>
+    <string name="connect_hint">IP del servidor (ej. 192.168.0.85:5000)</string>
+    <string name="connect_btn">Conectar</string>
+    <string name="change_server">Cambiar Servidor</string>
+    <string name="downloading">Descargando archivo...</string>
+    <string name="download_complete">Descarga completada</string>
+</resources>

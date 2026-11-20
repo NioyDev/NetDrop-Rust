@@ -2,6 +2,9 @@ name: Release
 
 on:
   workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
 
 permissions:
   contents: write
@@ -83,9 +86,76 @@ jobs:
             dist/NetDrop-Rust-Linux-x64.tar.gz
             dist/netdrop-rust_amd64.deb
 
+  build-android:
+    name: Compilar Android (.apk)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configurar JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Configurar Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Compilar APK con Android Build Tools
+        shell: bash
+        run: |
+          mkdir -p dist android/build_temp/compiled_res android/build_temp/gen android/build_temp/classes android/build_temp/dex
+          
+          BUILD_TOOLS=$(find $ANDROID_HOME/build-tools -mindepth 1 -maxdepth 1 | sort -V | tail -n 1)
+          ANDROID_JAR=$(find $ANDROID_HOME/platforms -name "android.jar" | sort -V | tail -n 1)
+          
+          echo "Build tools: $BUILD_TOOLS"
+          echo "Android JAR: $ANDROID_JAR"
+          
+          # 1. Compilar recursos con aapt2
+          $BUILD_TOOLS/aapt2 compile --dir android/app/src/main/res -o android/build_temp/compiled_res.zip
+          
+          # 2. Enlazar paquete
+          $BUILD_TOOLS/aapt2 link \
+            -I "$ANDROID_JAR" \
+            --manifest android/app/src/main/AndroidManifest.xml \
+            --java android/build_temp/gen \
+            -o android/build_temp/app-unaligned.apk \
+            --auto-add-overlay \
+            android/build_temp/compiled_res.zip
+          
+          # 3. Compilar código Java
+          find android/build_temp/gen android/app/src/main/java -name "*.java" > android/build_temp/sources.txt
+          javac -encoding UTF-8 -cp "$ANDROID_JAR" -d android/build_temp/classes @android/build_temp/sources.txt
+          
+          # 4. Generar DEX con d8
+          find android/build_temp/classes -name "*.class" > android/build_temp/classes.txt
+          $BUILD_TOOLS/d8 --lib "$ANDROID_JAR" --output android/build_temp/dex @android/build_temp/classes.txt
+          
+          # 5. Insertar classes.dex en APK
+          (cd android/build_temp/dex && jar -uf ../app-unaligned.apk classes.dex)
+          
+          # 6. Alinear APK con zipalign
+          $BUILD_TOOLS/zipalign -p -f 4 android/build_temp/app-unaligned.apk android/build_temp/app-aligned.apk
+          
+          # 7. Crear Keystore y Firmar APK
+          keytool -genkeypair -alias androiddebugkey -keypass android -keystore debug.keystore -storepass android -dname "CN=NetDrop,O=NioyDev,C=ES" -validity 10000 -keyalg RSA -keysize 2048
+          $BUILD_TOOLS/apksigner sign --ks debug.keystore --ks-pass pass:android --ks-key-alias androiddebugkey --key-pass pass:android --out dist/NetDrop-Android.apk android/build_temp/app-aligned.apk
+          $BUILD_TOOLS/apksigner verify dist/NetDrop-Android.apk
+          
+          echo "APK compilado con éxito:"
+          ls -lh dist/NetDrop-Android.apk
+          sha256sum dist/NetDrop-Android.apk
+
+      - name: Subir artefacto Android
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-artifacts
+          path: dist/NetDrop-Android.apk
+
   publish-release:
     name: Publicar GitHub Release Unificada
-    needs: [build-windows, build-linux]
+    needs: [build-windows, build-linux, build-android]
     runs-on: ubuntu-latest
     if: (startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch') && success()
     steps:
@@ -102,6 +172,19 @@ jobs:
         with:
           name: windows-artifacts
           path: release-assets/
+
+      - name: Descargar artefactos Android
+        uses: actions/download-artifact@v4
+        with:
+          name: android-artifacts
+          path: release-assets/
+
+      - name: Generar SHA256SUMS.txt consolidado
+        shell: bash
+        run: |
+          cd release-assets
+          sha256sum * > SHA256SUMS.txt
+          cat SHA256SUMS.txt
 
       - name: Publicar Release en GitHub
         uses: softprops/action-gh-release@v2
