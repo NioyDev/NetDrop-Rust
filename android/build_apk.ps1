@@ -14,6 +14,7 @@ $Keystore = "$SdkPath\debug.keystore"
 $AppDir = "$PSScriptRoot\app"
 $SrcDir = "$AppDir\src\main"
 $ResDir = "$SrcDir\res"
+$AssetsDir = "$SrcDir\assets"
 $Manifest = "$SrcDir\AndroidManifest.xml"
 $JavaSrc = "$SrcDir\java"
 
@@ -29,6 +30,10 @@ Write-Host "==> 2. Enlazando paquete con aapt2..." -ForegroundColor Cyan
 & "$BuildTools\aapt2.exe" link `
     -I "$AndroidJar" `
     --manifest "$Manifest" `
+    --min-sdk-version 24 `
+    --target-sdk-version 34 `
+    --version-code 2 `
+    --version-name "0.2.0" `
     --java "$WorkDir\gen" `
     -o "$WorkDir\app-unaligned.apk" `
     --auto-add-overlay `
@@ -44,10 +49,12 @@ $env:JAVA_HOME = "$SdkPath\jdk-17"
 $env:PATH = "$JavaBin;$env:PATH"
 & "$BuildTools\d8.bat" --lib "$AndroidJar" --output "$WorkDir\dex" $ClassFiles
 
-Write-Host "==> 5. Incorporando classes.dex al APK..." -ForegroundColor Cyan
-# Usar jar o aapt para agregar classes.dex al APK
+Write-Host "==> 5. Incorporando classes.dex y assets al APK..." -ForegroundColor Cyan
+# Usar jar para agregar classes.dex y assets con separadores de ruta estándar
 Set-Location "$WorkDir\dex"
 & "$JavaBin\jar.exe" -uf "$WorkDir\app-unaligned.apk" classes.dex
+Set-Location "$AppDir\src\main"
+& "$JavaBin\jar.exe" -uf "$WorkDir\app-unaligned.apk" assets
 Set-Location $PSScriptRoot
 
 Write-Host "==> 6. Alineando APK con zipalign (4 bytes)..." -ForegroundColor Cyan

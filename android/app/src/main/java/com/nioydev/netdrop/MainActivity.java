@@ -1,15 +1,18 @@
 package com.nioydev.netdrop;
 
+import android.Manifest;
 import android.app.Activity;
 import android.app.DownloadManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.graphics.Bitmap;
+import android.content.pm.PackageManager;
+import android.database.Cursor;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
+import android.provider.OpenableColumns;
 import android.view.View;
 import android.webkit.CookieManager;
 import android.webkit.DownloadListener;
@@ -28,6 +31,7 @@ import android.widget.ProgressBar;
 import android.widget.Toast;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
@@ -39,6 +43,7 @@ public class MainActivity extends Activity {
     private static final String PREFS_NAME = "NetDropPrefs";
     private static final String KEY_SERVER_URL = "server_url";
     private static final int FILE_CHOOSER_REQUEST_CODE = 1001;
+    private static final int PERMISSIONS_REQUEST_CODE = 2001;
 
     private WebView webView;
     private ProgressBar progressBar;
@@ -48,6 +53,7 @@ public class MainActivity extends Activity {
 
     private ValueCallback<Uri[]> filePathCallback;
     private SharedPreferences prefs;
+    private NetDropServer localServer;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -64,19 +70,49 @@ public class MainActivity extends Activity {
 
         setupWebView();
         setupConnectView();
+        checkPermissions();
 
+        // Arrancar servidor local autónomo embebido (igual que en PC)
+        localServer = new NetDropServer(this);
+        localServer.start();
+
+        // Cargar por defecto la URL local del servidor
+        String localUrl = "http://127.0.0.1:" + localServer.getPort();
+        loadServerUrl(localUrl);
+
+        // Procesar intents de compartir (Share Target)
         Intent intent = getIntent();
         String action = intent.getAction();
         String type = intent.getType();
+        if ((Intent.ACTION_SEND.equals(action) || Intent.ACTION_SEND_MULTIPLE.equals(action)) && type != null) {
+            handleSendIntent(intent);
+        }
+    }
 
-        String savedUrl = prefs.getString(KEY_SERVER_URL, "");
-        if (savedUrl != null && !savedUrl.isEmpty()) {
-            loadServerUrl(savedUrl);
-            if ((Intent.ACTION_SEND.equals(action) || Intent.ACTION_SEND_MULTIPLE.equals(action)) && type != null) {
-                handleSendIntent(intent);
+    private void checkPermissions() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            String[] perms = new String[]{
+                    Manifest.permission.READ_MEDIA_IMAGES,
+                    Manifest.permission.READ_MEDIA_VIDEO,
+                    Manifest.permission.READ_MEDIA_AUDIO
+            };
+            boolean need = false;
+            for (String p : perms) {
+                if (checkSelfPermission(p) != PackageManager.PERMISSION_GRANTED) {
+                    need = true;
+                    break;
+                }
             }
-        } else {
-            showConnectView();
+            if (need) {
+                requestPermissions(perms, PERMISSIONS_REQUEST_CODE);
+            }
+        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            if (checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+                requestPermissions(new String[]{
+                        Manifest.permission.READ_EXTERNAL_STORAGE,
+                        Manifest.permission.WRITE_EXTERNAL_STORAGE
+                }, PERMISSIONS_REQUEST_CODE);
+            }
         }
     }
 
@@ -98,37 +134,31 @@ public class MainActivity extends Activity {
 
         webView.setWebViewClient(new WebViewClient() {
             @Override
-            public void onPageStarted(WebView view, String url, Bitmap favicon) {
-                progressBar.setVisibility(View.VISIBLE);
-            }
-
-            @Override
             public void onPageFinished(WebView view, String url) {
+                super.onPageFinished(view, url);
                 progressBar.setVisibility(View.GONE);
             }
 
             @Override
             public void onReceivedError(WebView view, WebResourceRequest request, WebResourceError error) {
-                if (request.isForMainFrame()) {
-                    progressBar.setVisibility(View.GONE);
-                    Toast.makeText(MainActivity.this, "No se pudo conectar con el servidor NetDrop", Toast.LENGTH_SHORT).show();
-                    showConnectView();
+                super.onReceivedError(view, request, error);
+                if (request != null && request.isForMainFrame()) {
+                    // Fallback a vista de conexión si falla
+                    Toast.makeText(MainActivity.this, "Reconectando con el servidor local...", Toast.LENGTH_SHORT).show();
+                    if (localServer != null) {
+                        view.loadUrl("http://127.0.0.1:" + localServer.getPort());
+                    }
                 }
             }
 
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
-                String url = request.getUrl().toString();
-                if (url.startsWith("http://") || url.startsWith("https://")) {
-                    return false; // Carga dentro del WebView
-                }
-                try {
-                    Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
-                    startActivity(intent);
-                    return true;
-                } catch (Exception e) {
+                Uri uri = request.getUrl();
+                String scheme = uri.getScheme();
+                if ("http".equalsIgnoreCase(scheme) || "https".equalsIgnoreCase(scheme)) {
                     return false;
                 }
+                return false;
             }
         });
 
@@ -201,7 +231,10 @@ public class MainActivity extends Activity {
             public void onClick(View v) {
                 String input = ipEditText.getText().toString().trim();
                 if (input.isEmpty()) {
-                    Toast.makeText(MainActivity.this, "Introduce la IP del servidor", Toast.LENGTH_SHORT).show();
+                    // Si está vacío, volver al servidor local
+                    if (localServer != null) {
+                        loadServerUrl("http://127.0.0.1:" + localServer.getPort());
+                    }
                     return;
                 }
 
@@ -216,7 +249,7 @@ public class MainActivity extends Activity {
         });
     }
 
-    private void showConnectView() {
+    public void showConnectView() {
         connectView.setVisibility(View.VISIBLE);
         webView.setVisibility(View.GONE);
         String saved = prefs.getString(KEY_SERVER_URL, "");
@@ -236,101 +269,97 @@ public class MainActivity extends Activity {
         ArrayList<Uri> uris = new ArrayList<>();
 
         if (Intent.ACTION_SEND.equals(action)) {
-            Uri imageUri = intent.getParcelableExtra(Intent.EXTRA_STREAM);
-            if (imageUri != null) {
-                uris.add(imageUri);
+            Uri fileUri = intent.getParcelableExtra(Intent.EXTRA_STREAM);
+            if (fileUri != null) {
+                uris.add(fileUri);
             }
         } else if (Intent.ACTION_SEND_MULTIPLE.equals(action)) {
-            ArrayList<Uri> imageUris = intent.getParcelableArrayListExtra(Intent.EXTRA_STREAM);
-            if (imageUris != null) {
-                uris.addAll(imageUris);
+            ArrayList<Uri> list = intent.getParcelableArrayListExtra(Intent.EXTRA_STREAM);
+            if (list != null) {
+                uris.addAll(list);
             }
         }
 
-        if (!uris.isEmpty()) {
-            Toast.makeText(this, "Subiendo " + uris.size() + " archivo(s) a NetDrop...", Toast.LENGTH_SHORT).show();
-            uploadUrisAsync(uris);
-        }
-    }
+        if (uris.isEmpty()) return;
 
-    private void uploadUrisAsync(final ArrayList<Uri> uris) {
+        // Guardar directamente en el almacenamiento local de NetDrop
         new Thread(new Runnable() {
             @Override
             public void run() {
-                String baseUrl = prefs.getString(KEY_SERVER_URL, "");
-                if (baseUrl == null || baseUrl.isEmpty()) return;
+                int savedCount = 0;
+                File storage = localServer != null ? localServer.getStorageDir() :
+                        new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), "NetDrop");
+                if (!storage.exists()) storage.mkdirs();
 
-                String uploadUrl = baseUrl.endsWith("/") ? baseUrl + "upload" : baseUrl + "/upload";
-                String boundary = "NetDropBoundary" + System.currentTimeMillis();
-
-                try {
-                    URL url = new URL(uploadUrl);
-                    HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-                    conn.setDoOutput(true);
-                    conn.setRequestMethod("POST");
-                    conn.setRequestProperty("Content-Type", "multipart/form-data; boundary=" + boundary);
-
-                    OutputStream os = conn.getOutputStream();
-
-                    for (Uri uri : uris) {
-                        String fileName = "archivo_" + System.currentTimeMillis();
-                        try (android.database.Cursor cursor = getContentResolver().query(uri, null, null, null, null)) {
-                            if (cursor != null && cursor.moveToFirst()) {
-                                int nameIndex = cursor.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME);
-                                if (nameIndex != -1) {
-                                    fileName = cursor.getString(nameIndex);
-                                }
-                            }
-                        } catch (Exception ignored) {}
-
-                        os.write(("--" + boundary + "\r\n").getBytes());
-                        os.write(("Content-Disposition: form-data; name=\"files\"; filename=\"" + fileName + "\"\r\n").getBytes());
-                        os.write(("Content-Type: application/octet-stream\r\n\r\n").getBytes());
-
-                        InputStream is = getContentResolver().openInputStream(uri);
-                        if (is != null) {
-                            byte[] buffer = new byte[8192];
-                            int len;
-                            while ((len = is.read(buffer)) != -1) {
-                                os.write(buffer, 0, len);
-                            }
-                            is.close();
+                for (Uri uri : uris) {
+                    try {
+                        String name = getFileNameFromUri(uri);
+                        if (name == null || name.isEmpty()) {
+                            name = "archivo_" + System.currentTimeMillis();
                         }
-                        os.write("\r\n".getBytes());
-                    }
 
-                    os.write(("--" + boundary + "--\r\n").getBytes());
-                    os.flush();
-                    os.close();
+                        File outFile = new File(storage, name);
+                        InputStream in = getContentResolver().openInputStream(uri);
+                        OutputStream out = new FileOutputStream(outFile);
 
-                    final int code = conn.getResponseCode();
-                    runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            if (code >= 200 && code < 400) {
-                                Toast.makeText(MainActivity.this, "¡Archivos subidos exitosamente a NetDrop!", Toast.LENGTH_LONG).show();
-                                webView.reload();
-                            } else {
-                                Toast.makeText(MainActivity.this, "Error al subir archivos (HTTP " + code + ")", Toast.LENGTH_LONG).show();
-                            }
+                        byte[] buf = new byte[8192];
+                        int r;
+                        while ((r = in.read(buf)) != -1) {
+                            out.write(buf, 0, r);
                         }
-                    });
-
-                } catch (final Exception e) {
-                    runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            Toast.makeText(MainActivity.this, "Error en transferencia: " + e.getMessage(), Toast.LENGTH_LONG).show();
-                        }
-                    });
+                        in.close();
+                        out.close();
+                        savedCount++;
+                    } catch (Exception ignored) {}
                 }
+
+                final int finalSaved = savedCount;
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (finalSaved > 0) {
+                            Toast.makeText(MainActivity.this, "✓ " + finalSaved + " archivo(s) guardado(s) en NetDrop", Toast.LENGTH_LONG).show();
+                            webView.reload();
+                        }
+                    }
+                });
             }
         }).start();
+    }
+
+    private String getFileNameFromUri(Uri uri) {
+        String result = null;
+        if ("content".equals(uri.getScheme())) {
+            Cursor cursor = getContentResolver().query(uri, null, null, null, null);
+            if (cursor != null) {
+                try {
+                    if (cursor.moveToFirst()) {
+                        int idx = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME);
+                        if (idx >= 0) {
+                            result = cursor.getString(idx);
+                        }
+                    }
+                } finally {
+                    cursor.close();
+                }
+            }
+        }
+        if (result == null) {
+            String path = uri.getPath();
+            if (path != null) {
+                int cut = path.lastIndexOf('/');
+                if (cut != -1) {
+                    result = path.substring(cut + 1);
+                }
+            }
+        }
+        return result;
     }
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
+
         if (requestCode == FILE_CHOOSER_REQUEST_CODE) {
             if (filePathCallback == null) return;
 
@@ -353,10 +382,18 @@ public class MainActivity extends Activity {
 
     @Override
     public void onBackPressed() {
-        if (webView.getVisibility() == View.VISIBLE && webView.canGoBack()) {
+        if (webView.canGoBack()) {
             webView.goBack();
         } else {
             super.onBackPressed();
+        }
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (localServer != null) {
+            localServer.stop();
         }
     }
 }

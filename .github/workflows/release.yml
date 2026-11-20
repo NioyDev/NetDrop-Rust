@@ -120,6 +120,10 @@ jobs:
           $BUILD_TOOLS/aapt2 link \
             -I "$ANDROID_JAR" \
             --manifest android/app/src/main/AndroidManifest.xml \
+            --min-sdk-version 24 \
+            --target-sdk-version 34 \
+            --version-code 2 \
+            --version-name "0.2.0" \
             --java android/build_temp/gen \
             -o android/build_temp/app-unaligned.apk \
             --auto-add-overlay \
@@ -133,8 +137,9 @@ jobs:
           find android/build_temp/classes -name "*.class" > android/build_temp/classes.txt
           $BUILD_TOOLS/d8 --lib "$ANDROID_JAR" --output android/build_temp/dex @android/build_temp/classes.txt
           
-          # 5. Insertar classes.dex en APK
+          # 5. Insertar classes.dex y assets en APK
           (cd android/build_temp/dex && jar -uf ../app-unaligned.apk classes.dex)
+          (cd android/app/src/main && jar -uf ../../../build_temp/app-unaligned.apk assets)
           
           # 6. Alinear APK con zipalign
           $BUILD_TOOLS/zipalign -p -f 4 android/build_temp/app-unaligned.apk android/build_temp/app-aligned.apk
