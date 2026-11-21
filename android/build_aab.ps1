@@ -4,10 +4,25 @@ param (
     [string]$OutputDir = "$PSScriptRoot\..\dist",
     [string]$Keystore = "$PSScriptRoot\netdrop-release.keystore",
     [string]$KeyAlias = "netdrop",
-    [string]$KeyPass = "NetDrop2026!"
+    [string]$KeyPass = "NetDrop2026!",
+    [int]$VersionCode = 0,
+    [string]$VersionName = "1.0.0"
 )
 
 $ErrorActionPreference = "Stop"
+
+# Manejo de VersionCode auto-incremental para evitar choques en Google Play
+$VersionFile = "$PSScriptRoot\version_code.txt"
+if ($VersionCode -le 0) {
+    if (Test-Path $VersionFile) {
+        $lastCode = [int](Get-Content $VersionFile).Trim()
+        $VersionCode = [math]::Max($lastCode + 1, 10)
+    } else {
+        $VersionCode = 10
+    }
+}
+Set-Content -Path $VersionFile -Value $VersionCode -Force
+Write-Host ">>> Compilando con VersionCode: $VersionCode | VersionName: $VersionName <<<" -ForegroundColor Yellow
 
 $BuildTools = "$SdkPath\build-tools\34.0.0"
 $AndroidJar = if (Test-Path "$SdkPath\platforms\android-36\android.jar") { "$SdkPath\platforms\android-36\android.jar" } else { "$SdkPath\platforms\android-34\android.jar" }
@@ -45,8 +60,8 @@ Write-Host "==> 2. Generando R.java y enlazando recursos proto para AAB..." -For
     --manifest "$Manifest" `
     --min-sdk-version 24 `
     --target-sdk-version 36 `
-    --version-code 6 `
-    --version-name "0.3.1" `
+    --version-code $VersionCode `
+    --version-name "$VersionName" `
     --java "$WorkDir\gen" `
     --custom-package "com.nioydev.netdrop" `
     --auto-add-overlay `
@@ -59,8 +74,8 @@ Write-Host "==> 2. Generando R.java y enlazando recursos proto para AAB..." -For
     --manifest "$Manifest" `
     --min-sdk-version 24 `
     --target-sdk-version 36 `
-    --version-code 6 `
-    --version-name "0.3.1" `
+    --version-code $VersionCode `
+    --version-name "$VersionName" `
     --proto-format `
     --auto-add-overlay `
     "$WorkDir\compiled_res.zip" `
