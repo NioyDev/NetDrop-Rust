@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Política de Privacidad - NetDrop</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card-bg: #1e293b;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --accent: #38bdf8;
+      --border: #334155;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      padding: 2rem 1rem;
+    }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      background: var(--card-bg);
+      padding: 2.5rem;
+      border-radius: 1rem;
+      border: 1px solid var(--border);
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+    }
+    h1 { color: var(--accent); font-size: 2rem; margin-bottom: 0.5rem; }
+    .meta { color: var(--text-muted); font-size: 0.9rem; margin-bottom: 2rem; border-bottom: 1px solid var(--border); padding-bottom: 1rem; }
+    h2 { color: #e2e8f0; font-size: 1.3rem; margin-top: 1.75rem; margin-bottom: 0.75rem; }
+    p, ul { margin-bottom: 1rem; color: #cbd5e1; }
+    ul { padding-left: 1.5rem; }
+    li { margin-bottom: 0.5rem; }
+    table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.95rem; }
+    th, td { border: 1px solid var(--border); padding: 0.75rem; text-align: left; }
+    th { background: rgba(56, 189, 248, 0.1); color: var(--accent); }
+    code { background: #0f172a; padding: 0.2rem 0.4rem; border-radius: 0.25rem; font-family: monospace; color: #38bdf8; font-size: 0.85em; }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .badge { display: inline-block; padding: 0.25rem 0.75rem; border-radius: 9999px; background: rgba(56, 189, 248, 0.15); color: var(--accent); font-weight: 600; font-size: 0.8rem; margin-bottom: 1rem; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <span class="badge">Privacidad por Diseño</span>
+    <h1>Política de Privacidad de NetDrop</h1>
+    <div class="meta">
+      <strong>Última actualización:</strong> 21 de noviembre de 2026<br>
+      <strong>Aplicación:</strong> NetDrop (ID: <code>netdrop.nexthezia.com</code>)<br>
+      <strong>Desarrollador:</strong> NioyDev
+    </div>
+
+    <h2>1. Introducción</h2>
+    <p>En <strong>NetDrop</strong> la privacidad de nuestros usuarios es nuestra prioridad absoluta. NetDrop es una solución diseñada para transferir archivos entre dispositivos (computadoras, teléfonos y tablets) conectados a una misma red local (Wi-Fi/LAN), sin enviar datos a internet ni a servidores de terceros.</p>
+
+    <h2>2. Información que NO recopilamos</h2>
+    <p>NetDrop <strong>NO</strong> recopila, almacena ni transmite ningún tipo de dato personal:</p>
+    <ul>
+      <li><strong>Sin cuentas ni registros:</strong> No necesitas registrarte ni ingresar correos, nombres ni contraseñas.</li>
+      <li><strong>Sin rastreadores ni analíticas:</strong> No incluimos herramientas de seguimiento de terceros ni publicidad.</li>
+      <li><strong>Sin servidores en la nube:</strong> Tus archivos viajan directamente entre tus dispositivos sin intermediarios.</li>
+    </ul>
+
+    <h2>3. Permisos solicitados</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Permiso</th>
+          <th>Propósito técnico</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>INTERNET</code></td>
+          <td>Permite que los dispositivos se comuniquen de forma directa a través de la red Wi-Fi local.</td>
+        </tr>
+        <tr>
+          <td><code>ACCESS_NETWORK_STATE</code> / <code>ACCESS_WIFI_STATE</code></td>
+          <td>Obtener la dirección IP local del dispositivo para generar el código QR y enlace de conexión.</td>
+        </tr>
+        <tr>
+          <td><code>READ_MEDIA_*</code> / <code>READ_EXTERNAL_STORAGE</code></td>
+          <td>Permite al usuario seleccionar imágenes, videos y archivos que voluntariamente desea enviar.</td>
+        </tr>
+        <tr>
+          <td><code>WRITE_EXTERNAL_STORAGE</code></td>
+          <td>Guardar los archivos recibidos en la carpeta de descargas del dispositivo.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2>4. Compartición de datos con terceros</h2>
+    <p>NetDrop <strong>no comparte ni vende</strong> ningún dato con terceros, empresas de publicidad ni entidades externas.</p>
+
+    <h2>5. Control y eliminación de archivos</h2>
+    <p>Los archivos recibidos se guardan directamente en el almacenamiento interno de tu propio dispositivo. Puedes eliminarlos o gestionarlos en cualquier momento a través del explorador de archivos o la interfaz de NetDrop.</p>
+
+    <h2>6. Contacto</h2>
+    <p>Para dudas, consultas o reportes sobre privacidad:</p>
+    <p>Repositorio de GitHub: <a href="https://github.com/NioyDev/NetDrop-Rust" target="_blank">https://github.com/NioyDev/NetDrop-Rust</a></p>
+  </div>
+</body>
+</html>
