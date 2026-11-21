@@ -45,8 +45,8 @@ Write-Host "==> 2. Generando R.java y enlazando recursos proto para AAB..." -For
     --manifest "$Manifest" `
     --min-sdk-version 24 `
     --target-sdk-version 36 `
-    --version-code 4 `
-    --version-name "0.2.0" `
+    --version-code 5 `
+    --version-name "0.3.0" `
     --java "$WorkDir\gen" `
     --custom-package "com.nioydev.netdrop" `
     --auto-add-overlay `
@@ -59,8 +59,8 @@ Write-Host "==> 2. Generando R.java y enlazando recursos proto para AAB..." -For
     --manifest "$Manifest" `
     --min-sdk-version 24 `
     --target-sdk-version 36 `
-    --version-code 4 `
-    --version-name "0.2.0" `
+    --version-code 5 `
+    --version-name "0.3.0" `
     --proto-format `
     --auto-add-overlay `
     "$WorkDir\compiled_res.zip" `
