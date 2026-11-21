@@ -247,8 +247,8 @@
             chunkBlob = null;
             const text = await response.text();
             const result = text ? JSON.parse(text) : {};
-            if (!response.ok || !result.ok) {
-                throw new Error(result.error || 'Error al enviar fragmento');
+            if (!response.ok || (!result.ok && !result.success)) {
+                throw new Error(result.error || result.message || 'Error al enviar fragmento');
             }
 
             const chunkPercent = Math.round(((chunkIndex + 1) / totalChunks) * 100);

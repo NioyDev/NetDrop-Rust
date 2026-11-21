@@ -318,8 +318,14 @@ public class NetDropServer {
                 return;
             }
 
-            // Subida de Archivos (/upload, /upload-chunk, POST /)
-            if ("POST".equals(method) && (path.equals("/") || path.equals("/upload") || path.equals("/upload-chunk"))) {
+            // Subida por Fragmentos (/upload-chunk)
+            if ("POST".equals(method) && path.equals("/upload-chunk")) {
+                handleUploadChunk(headers, in, out);
+                return;
+            }
+
+            // Subida de Archivos (/upload, POST /)
+            if ("POST".equals(method) && (path.equals("/") || path.equals("/upload"))) {
                 handleUpload(headers, in, out);
                 return;
             }
@@ -379,17 +385,27 @@ public class NetDropServer {
             if (fileList.isEmpty()) {
                 fileListHtml = "<div class=\"empty-state-card\">\n"
                         + "    <div class=\"empty-icon-circle\">\n"
-                        + "        <svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z\"/><polyline points=\"13 2 13 9 20 9\"/></svg>\n"
+                        + "        <svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 2 2h12a2 2 0 0 2-2V9z\"/><polyline points=\"13 2 13 9 20 9\"/></svg>\n"
                         + "    </div>\n"
                         + "    <h3 class=\"empty-title\">No hay archivos compartidos aún</h3>\n"
                         + "    <p class=\"empty-text\">Arrastra un archivo en el recuadro superior o pulsa el botón flotante para compartir el primero desde tu teléfono o PC.</p>\n"
+                        + "    <button type=\"button\" class=\"btn-reload-list\" data-action=\"reload-page\" style=\"margin-top: 14px;\">\n"
+                        + "        <svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67\"/></svg>\n"
+                        + "        <span>Comprobar archivos</span>\n"
+                        + "    </button>\n"
                         + "</div>\n";
             } else {
                 StringBuilder sb = new StringBuilder();
                 sb.append("<div class=\"file-list-container\" id=\"FileListContainer\">\n");
                 sb.append("    <div class=\"file-list-header\">\n");
-                sb.append("        <span class=\"file-count-label\">").append(fileList.size())
+                sb.append("        <div class=\"file-list-title-group\">\n");
+                sb.append("            <span class=\"file-count-label\">").append(fileList.size())
                         .append(fileList.size() == 1 ? " archivo disponible" : " archivos disponibles").append("</span>\n");
+                sb.append("            <button type=\"button\" class=\"btn-reload-list\" data-action=\"reload-page\" title=\"Recargar lista de archivos\">\n");
+                sb.append("                <svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67\"/></svg>\n");
+                sb.append("                <span>Recargar</span>\n");
+                sb.append("            </button>\n");
+                sb.append("        </div>\n");
                 sb.append("        <span class=\"file-mobile-hint\">\n");
                 sb.append("            <span class=\"hint-pill hint-pill-delete\">➔ Deslizar para Borrar</span>\n");
                 sb.append("            <span class=\"hint-pill hint-pill-pin\">⬅ Deslizar para Fijar</span>\n");
@@ -567,12 +583,12 @@ public class NetDropServer {
         }
 
         private void handleDeleteFile(String filename, OutputStream out) throws Exception {
-            File f = new File(getStorageDir(), filename);
-            boolean ok = false;
+            String decoded = URLDecoder.decode(filename, "UTF-8");
+            File f = new File(getStorageDir(), sanitizeFilename(decoded));
             if (f.exists() && f.isFile()) {
-                ok = f.delete();
+                f.delete();
             }
-            sendJsonResponse(out, 200, "{\"success\":" + ok + "}");
+            sendRedirect(out, "/");
         }
 
         private void handlePinFile(String filename, OutputStream out) throws Exception {
@@ -628,6 +644,134 @@ public class NetDropServer {
             sendJsonResponse(out, 200, "{\"success\":true}");
         }
 
+        private static class MultiPartItem {
+            String name = "";
+            String filename = "";
+            byte[] data;
+
+            String asText() {
+                return data != null ? new String(data, StandardCharsets.UTF_8).trim() : "";
+            }
+        }
+
+        private List<MultiPartItem> parseMultipart(String contentType, InputStream in, int totalLength) throws Exception {
+            List<MultiPartItem> parts = new ArrayList<>();
+            String boundaryMarker = "boundary=";
+            int bIdx = contentType.indexOf(boundaryMarker);
+            if (bIdx < 0) return parts;
+            String boundary = "--" + contentType.substring(bIdx + boundaryMarker.length()).trim();
+            byte[] boundaryBytes = boundary.getBytes(StandardCharsets.UTF_8);
+
+            byte[] allBytes = readExact(in, totalLength);
+            int pos = 0;
+
+            while (pos < allBytes.length) {
+                int partStart = indexOf(allBytes, boundaryBytes, pos);
+                if (partStart < 0) break;
+                partStart += boundaryBytes.length;
+
+                byte[] headerSep = "\r\n\r\n".getBytes(StandardCharsets.UTF_8);
+                int hEnd = indexOf(allBytes, headerSep, partStart);
+                if (hEnd < 0) break;
+
+                String partHeader = new String(allBytes, partStart, hEnd - partStart, StandardCharsets.UTF_8);
+                int bodyStart = hEnd + headerSep.length;
+
+                int nextBoundary = indexOf(allBytes, boundaryBytes, bodyStart);
+                if (nextBoundary < 0) break;
+
+                int bodyEnd = nextBoundary - 2; // Descartar \r\n anterior
+                if (bodyEnd >= bodyStart) {
+                    MultiPartItem item = new MultiPartItem();
+                    int nIdx = partHeader.indexOf("name=\"");
+                    if (nIdx >= 0) {
+                        nIdx += 6;
+                        int nEnd = partHeader.indexOf("\"", nIdx);
+                        if (nEnd > nIdx) item.name = partHeader.substring(nIdx, nEnd);
+                    }
+                    int fnIdx = partHeader.indexOf("filename=\"");
+                    if (fnIdx >= 0) {
+                        fnIdx += 10;
+                        int fnEnd = partHeader.indexOf("\"", fnIdx);
+                        if (fnEnd > fnIdx) item.filename = partHeader.substring(fnIdx, fnEnd);
+                    }
+                    item.data = Arrays.copyOfRange(allBytes, bodyStart, bodyEnd);
+                    parts.add(item);
+                }
+                pos = nextBoundary;
+            }
+            return parts;
+        }
+
+        private void handleUploadChunk(Map<String, String> headers, InputStream in, OutputStream out) throws Exception {
+            String ctype = headers.get("content-type");
+            int len = 0;
+            try {
+                len = Integer.parseInt(headers.get("content-length"));
+            } catch (Exception ignored) {}
+
+            List<MultiPartItem> parts = (ctype != null && ctype.contains("multipart/form-data"))
+                    ? parseMultipart(ctype, in, len)
+                    : new ArrayList<MultiPartItem>();
+
+            String filename = null;
+            String uploadId = null;
+            int chunkIndex = 0;
+            int totalChunks = 1;
+            byte[] chunkData = null;
+
+            for (MultiPartItem p : parts) {
+                if ("filename".equals(p.name)) {
+                    filename = p.asText();
+                } else if ("upload_id".equals(p.name)) {
+                    uploadId = p.asText();
+                } else if ("chunk_index".equals(p.name)) {
+                    try { chunkIndex = Integer.parseInt(p.asText()); } catch (Exception ignored) {}
+                } else if ("total_chunks".equals(p.name)) {
+                    try { totalChunks = Integer.parseInt(p.asText()); } catch (Exception ignored) {}
+                } else if ("file_chunk".equals(p.name) || "UPFile".equals(p.name)) {
+                    chunkData = p.data;
+                    if ((filename == null || filename.isEmpty()) && !p.filename.isEmpty()) {
+                        filename = p.filename;
+                    }
+                }
+            }
+
+            if (filename == null || filename.isEmpty()) {
+                sendJsonResponse(out, 400, "{\"ok\":false,\"error\":\"Nombre de archivo inválido\"}");
+                return;
+            }
+            if (chunkData == null) {
+                sendJsonResponse(out, 400, "{\"ok\":false,\"error\":\"Fragmento vacío\"}");
+                return;
+            }
+            if (uploadId == null || uploadId.isEmpty()) {
+                uploadId = "chunk_" + System.currentTimeMillis();
+            }
+
+            File partialsDir = new File(getStorageDir(), ".partials");
+            if (!partialsDir.exists()) partialsDir.mkdirs();
+
+            File partFile = new File(partialsDir, sanitizeFilename(uploadId) + ".part");
+            if (chunkIndex == 0 && partFile.exists()) {
+                partFile.delete();
+            }
+
+            FileOutputStream fos = new FileOutputStream(partFile, true);
+            fos.write(chunkData);
+            fos.flush();
+            fos.close();
+
+            if (chunkIndex + 1 >= totalChunks) {
+                File finalFile = new File(getStorageDir(), sanitizeFilename(filename));
+                if (finalFile.exists()) finalFile.delete();
+                partFile.renameTo(finalFile);
+                sendJsonResponse(out, 200, "{\"ok\":true,\"complete\":true,\"success\":true,\"message\":\"Subida completada exitosamente\",\"filename\":\"" + escapeJson(filename) + "\"}");
+            } else {
+                sendJsonResponse(out, 200, "{\"ok\":true,\"complete\":false,\"success\":true,\"chunk_index\":" + chunkIndex + "}");
+            }
+        }
+
         private void handleUpload(Map<String, String> headers, InputStream in, OutputStream out) throws Exception {
             String ctype = headers.get("content-type");
             int len = 0;
@@ -636,9 +780,17 @@ public class NetDropServer {
             } catch (Exception ignored) {}
 
             if (ctype != null && ctype.contains("multipart/form-data")) {
-                parseAndSaveMultipart(ctype, in, len);
+                List<MultiPartItem> parts = parseMultipart(ctype, in, len);
+                for (MultiPartItem p : parts) {
+                    if (!p.filename.isEmpty() && p.data != null && p.data.length > 0) {
+                        File target = new File(getStorageDir(), sanitizeFilename(p.filename));
+                        FileOutputStream fos = new FileOutputStream(target);
+                        fos.write(p.data);
+                        fos.flush();
+                        fos.close();
+                    }
+                }
             } else {
-                // Chunk upload directo o cabecera x-filename
                 String filename = headers.get("x-filename");
                 if (filename == null) filename = "archivo_" + System.currentTimeMillis() + ".bin";
                 filename = URLDecoder.decode(filename, "UTF-8");
@@ -656,56 +808,11 @@ public class NetDropServer {
                 fos.close();
             }
 
-            sendJsonResponse(out, 200, "{\"success\":true,\"message\":\"Subido correctamente\"}");
-        }
-
-        private void parseAndSaveMultipart(String contentType, InputStream in, int totalLength) throws Exception {
-            String boundaryMarker = "boundary=";
-            int bIdx = contentType.indexOf(boundaryMarker);
-            if (bIdx < 0) return;
-            String boundary = "--" + contentType.substring(bIdx + boundaryMarker.length()).trim();
-            byte[] boundaryBytes = boundary.getBytes(StandardCharsets.UTF_8);
-
-            // Leer flujo multipart
-            byte[] data = readExact(in, totalLength);
-            int pos = 0;
-
-            while (pos < data.length) {
-                int partStart = indexOf(data, boundaryBytes, pos);
-                if (partStart < 0) break;
-                partStart += boundaryBytes.length;
-
-                // Fin de headers de parte (\r\n\r\n)
-                byte[] headerSep = "\r\n\r\n".getBytes(StandardCharsets.UTF_8);
-                int hEnd = indexOf(data, headerSep, partStart);
-                if (hEnd < 0) break;
-
-                String partHeader = new String(data, partStart, hEnd - partStart, StandardCharsets.UTF_8);
-                int bodyStart = hEnd + headerSep.length;
-
-                int nextBoundary = indexOf(data, boundaryBytes, bodyStart);
-                if (nextBoundary < 0) break;
-
-                int bodyEnd = nextBoundary - 2; // Descartar \r\n anterior
-
-                if (partHeader.contains("filename=")) {
-                    String fnMarker = "filename=\"";
-                    int fStart = partHeader.indexOf(fnMarker);
-                    if (fStart >= 0) {
-                        fStart += fnMarker.length();
-                        int fEnd = partHeader.indexOf("\"", fStart);
-                        if (fEnd > fStart) {
-                            String filename = partHeader.substring(fStart, fEnd);
-                            if (!filename.isEmpty()) {
-                                File outFile = new File(getStorageDir(), sanitizeFilename(filename));
-                                FileOutputStream fos = new FileOutputStream(outFile);
-                                fos.write(data, bodyStart, bodyEnd - bodyStart);
-                                fos.close();
-                            }
-                        }
-                    }
-                }
-                pos = nextBoundary;
+            String accept = headers.get("accept");
+            if (accept != null && accept.contains("text/html")) {
+                sendRedirect(out, "/");
+            } else {
+                sendJsonResponse(out, 200, "{\"ok\":true,\"complete\":true,\"success\":true,\"message\":\"Subido correctamente\"}");
             }
         }
 
@@ -786,6 +893,22 @@ public class NetDropServer {
 
             out.write(sb.toString().getBytes(StandardCharsets.UTF_8));
             out.write(body);
+        }
+
+        private void sendRedirect(OutputStream out, String location) throws IOException {
+            StringBuilder sb = new StringBuilder();
+            sb.append("HTTP/1.1 302 Found\r\n");
+            sb.append("Location: ").append(location).append("\r\n");
+            sb.append("Content-Length: 0\r\n");
+            sb.append("Access-Control-Allow-Origin: *\r\n");
+            sb.append("Access-Control-Allow-Methods: GET, POST, OPTIONS\r\n");
+            sb.append("Connection: close\r\n\r\n");
+            out.write(sb.toString().getBytes(StandardCharsets.UTF_8));
+        }
+
+        private String escapeJson(String s) {
+            if (s == null) return "";
+            return s.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n").replace("\r", "\\r");
         }
 
         private String readAssetString(String path) throws IOException {

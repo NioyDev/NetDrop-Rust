@@ -142,6 +142,7 @@
         initPinnedFiles();
         updateCategoryCounts();
         setupTouchSwipeGestures();
+        setupPullToRefresh();
         setupLiveSync();
         setupFab();
         document.addEventListener('click', handlePageClick);
@@ -349,9 +350,19 @@
     /**
      * Confirma la eliminación y redirige al endpoint seguro.
      */
-    function confirmDeleteFile() {
+    async function confirmDeleteFile() {
         if (!currentDeleteFilename) return;
-        window.location.href = '/eliminar/' + encodeURIComponent(currentDeleteFilename);
+        const filename = currentDeleteFilename;
+        closeDeleteSheet();
+        try {
+            const res = await fetch('/eliminar/' + encodeURIComponent(filename), { method: 'POST' });
+            if (res.ok || res.redirected) {
+                if (window.showToast) window.showToast(`✓ Archivo "${filename}" eliminado`);
+                setTimeout(() => window.location.reload(), 200);
+                return;
+            }
+        } catch (_) {}
+        window.location.href = '/eliminar/' + encodeURIComponent(filename);
     }
 
     /**
@@ -664,8 +675,8 @@
                 chunkBlob = null; // Liberación de memoria inmediata
                 const text = await response.text();
                 const result = text ? JSON.parse(text) : {};
-                if (!response.ok || !result.ok) {
-                    throw new Error(result.error || 'Error al subir fragmento');
+                if (!response.ok || (!result.ok && !result.success)) {
+                    throw new Error(result.error || result.message || 'Error al subir fragmento');
                 }
 
                 const percent = Math.round(((chunkIndex + 1) / totalChunks) * 100);
@@ -714,6 +725,66 @@
     }
 
     /**
+     * Gesto táctil Pull-To-Refresh (arrastrar hacia abajo en la parte superior para recargar)
+     */
+    function setupPullToRefresh() {
+        let touchStartY = 0;
+        let touchMoveY = 0;
+        let isPulling = false;
+
+        const pullIndicator = document.createElement('div');
+        pullIndicator.className = 'pull-refresh-indicator';
+        pullIndicator.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg><span>Desliza para recargar</span>';
+        document.body.prepend(pullIndicator);
+
+        window.addEventListener('touchstart', (e) => {
+            if (window.scrollY <= 2 && e.touches.length === 1) {
+                touchStartY = e.touches[0].clientY;
+                isPulling = false;
+            }
+        }, { passive: true });
+
+        window.addEventListener('touchmove', (e) => {
+            if (window.scrollY <= 2 && e.touches.length === 1) {
+                touchMoveY = e.touches[0].clientY;
+                const distance = touchMoveY - touchStartY;
+                if (distance > 15) {
+                    isPulling = true;
+                    const pullY = Math.min(distance * 0.42, 85);
+                    pullIndicator.style.transform = `translateY(${pullY}px) translateX(-50%)`;
+                    pullIndicator.style.opacity = String(Math.min(1, pullY / 40));
+                    if (pullY >= 50) {
+                        pullIndicator.classList.add('ready');
+                        const span = pullIndicator.querySelector('span');
+                        if (span) span.textContent = 'Suelta para recargar';
+                    } else {
+                        pullIndicator.classList.remove('ready');
+                        const span = pullIndicator.querySelector('span');
+                        if (span) span.textContent = 'Desliza para recargar';
+                    }
+                }
+            }
+        }, { passive: true });
+
+        window.addEventListener('touchend', () => {
+            if (isPulling) {
+                const distance = touchMoveY - touchStartY;
+                if (distance > 110) {
+                    pullIndicator.classList.add('refreshing');
+                    const span = pullIndicator.querySelector('span');
+                    if (span) span.textContent = 'Recargando...';
+                    setTimeout(() => window.location.reload(), 250);
+                } else {
+                    pullIndicator.style.transform = 'translateY(0) translateX(-50%)';
+                    pullIndicator.style.opacity = '0';
+                    pullIndicator.classList.remove('ready');
+                }
+                isPulling = false;
+            }
+        }, { passive: true });
+    }
+
+    /**
      * Delegador de clics en la página.
      * @param {MouseEvent} event 
      */
@@ -751,6 +822,12 @@
         } else if (action === 'clear-search') {
             event.preventDefault();
             clearSearch();
+        } else if (action === 'reload-page') {
+            event.preventDefault();
+            const btn = target.closest('[data-action="reload-page"]');
+            if (btn) btn.classList.add('is-rotating');
+            if (window.showToast) window.showToast('Recargando lista de archivos...');
+            setTimeout(() => window.location.reload(), 250);
         }
     }
 

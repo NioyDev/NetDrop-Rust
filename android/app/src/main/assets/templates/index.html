@@ -50,7 +50,13 @@
     {% if File %}
     <div class="file-list-container" id="FileListContainer">
         <div class="file-list-header">
-            <span class="file-count-label">{{ File|length }} {% if File|length == 1 %}archivo disponible{% else %}archivos disponibles{% endif %}</span>
+            <div class="file-list-title-group">
+                <span class="file-count-label">{{ File|length }} {% if File|length == 1 %}archivo disponible{% else %}archivos disponibles{% endif %}</span>
+                <button type="button" class="btn-reload-list" data-action="reload-page" title="Recargar lista de archivos">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+                    <span>Recargar</span>
+                </button>
+            </div>
             <span class="file-mobile-hint">
                 <span class="hint-pill hint-pill-delete">➔ Deslizar para Borrar</span>
                 <span class="hint-pill hint-pill-pin">⬅ Deslizar para Fijar</span>

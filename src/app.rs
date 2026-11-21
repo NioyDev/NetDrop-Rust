@@ -950,6 +950,7 @@ pub fn crear_router(app_state: Arc<AppState>) -> Router {
         .route("/archivo/:raw_filename", get(archivo))
         .route("/descarga/:raw_filename", get(descarga))
         .route("/eliminar/:raw_filename", get(eliminar).post(eliminar))
+        .route("/delete/:raw_filename", get(eliminar).post(eliminar))
         .route("/qr-image", get(qr_image))
         .route("/qr", get(qr))
         .route("/static/*path", get(static_handler))
