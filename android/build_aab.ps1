@@ -1,7 +1,10 @@
-﻿# Script de compilación para Android App Bundle (.aab) oficial de Google Play
+﻿# Script de compilación para Android App Bundle (.aab) oficial de Google Play (Modo Lanzamiento / Release)
 param (
     [string]$SdkPath = "C:\Users\migue\AndroidSDK",
-    [string]$OutputDir = "$PSScriptRoot\..\dist"
+    [string]$OutputDir = "$PSScriptRoot\..\dist",
+    [string]$Keystore = "$PSScriptRoot\netdrop-release.keystore",
+    [string]$KeyAlias = "netdrop",
+    [string]$KeyPass = "NetDrop2026!"
 )
 
 $ErrorActionPreference = "Stop"
@@ -9,7 +12,15 @@ $ErrorActionPreference = "Stop"
 $BuildTools = "$SdkPath\build-tools\34.0.0"
 $AndroidJar = "$SdkPath\platforms\android-34\android.jar"
 $JavaBin = "$SdkPath\jdk-17\bin"
-$Keystore = "$SdkPath\debug.keystore"
+if (-not (Test-Path $Keystore)) {
+    if (Test-Path "$SdkPath\netdrop-release.keystore") {
+        $Keystore = "$SdkPath\netdrop-release.keystore"
+    } else {
+        $Keystore = "$SdkPath\debug.keystore"
+        $KeyAlias = "androiddebugkey"
+        $KeyPass = "android"
+    }
+}
 $Bundletool = "$SdkPath\bundletool.jar"
 
 $AppDir = "$PSScriptRoot\app"
@@ -95,14 +106,14 @@ Write-Host "==> 6. Construyendo Android App Bundle (.aab) con bundletool..." -Fo
 $UnsignedAab = "$WorkDir\NetDrop-unsigned.aab"
 & "$JavaBin\java.exe" -jar "$Bundletool" build-bundle --modules="$WorkDir\base.zip" --output="$UnsignedAab"
 
-Write-Host "==> 7. Firmando AAB con jarsigner..." -ForegroundColor Cyan
+Write-Host "==> 7. Firmando AAB en Modo Lanzamiento (Release) con jarsigner..." -ForegroundColor Cyan
 $FinalAab = "$OutputDir\NetDrop-Android.aab"
 if (Test-Path $FinalAab) { Remove-Item -Force $FinalAab }
 Copy-Item -Path $UnsignedAab -Destination $FinalAab -Force
 
-& "$JavaBin\jarsigner.exe" -keystore "$Keystore" -storepass "android" -keypass "android" `
+& "$JavaBin\jarsigner.exe" -keystore "$Keystore" -storepass "$KeyPass" -keypass "$KeyPass" `
     -sigalg SHA256withRSA -digestalg SHA-256 `
-    "$FinalAab" "androiddebugkey"
+    "$FinalAab" "$KeyAlias"
 
 Write-Host "==> 8. Verificando AAB con bundletool validate..." -ForegroundColor Cyan
 & "$JavaBin\java.exe" -jar "$Bundletool" validate --bundle="$FinalAab"

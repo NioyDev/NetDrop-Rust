@@ -1,7 +1,10 @@
 ﻿# Script de compilación local para NetDrop Android APK
 param (
     [string]$SdkPath = "C:\Users\migue\AndroidSDK",
-    [string]$OutputDir = "$PSScriptRoot\..\dist"
+    [string]$OutputDir = "$PSScriptRoot\..\dist",
+    [string]$Keystore = "$PSScriptRoot\netdrop-release.keystore",
+    [string]$KeyAlias = "netdrop",
+    [string]$KeyPass = "NetDrop2026!"
 )
 
 $ErrorActionPreference = "Stop"
@@ -9,7 +12,15 @@ $ErrorActionPreference = "Stop"
 $BuildTools = "$SdkPath\build-tools\34.0.0"
 $AndroidJar = "$SdkPath\platforms\android-34\android.jar"
 $JavaBin = "$SdkPath\jdk-17\bin"
-$Keystore = "$SdkPath\debug.keystore"
+if (-not (Test-Path $Keystore)) {
+    if (Test-Path "$SdkPath\netdrop-release.keystore") {
+        $Keystore = "$SdkPath\netdrop-release.keystore"
+    } else {
+        $Keystore = "$SdkPath\debug.keystore"
+        $KeyAlias = "androiddebugkey"
+        $KeyPass = "android"
+    }
+}
 
 $AppDir = "$PSScriptRoot\app"
 $SrcDir = "$AppDir\src\main"
@@ -60,15 +71,15 @@ Set-Location $PSScriptRoot
 Write-Host "==> 6. Alineando APK con zipalign (4 bytes)..." -ForegroundColor Cyan
 & "$BuildTools\zipalign.exe" -p -f 4 "$WorkDir\app-unaligned.apk" "$WorkDir\app-aligned.apk"
 
-Write-Host "==> 7. Firmando APK con apksigner (V1 + V2 + V3)..." -ForegroundColor Cyan
+Write-Host "==> 7. Firmando APK en Modo Lanzamiento (Release) con apksigner (V1 + V2 + V3)..." -ForegroundColor Cyan
 $FinalApk = "$OutputDir\NetDrop-Android.apk"
 if (Test-Path $FinalApk) { Remove-Item -Force $FinalApk }
 
 & "$BuildTools\apksigner.bat" sign `
     --ks "$Keystore" `
-    --ks-pass "pass:android" `
-    --ks-key-alias "androiddebugkey" `
-    --key-pass "pass:android" `
+    --ks-pass "pass:$KeyPass" `
+    --ks-key-alias "$KeyAlias" `
+    --key-pass "pass:$KeyPass" `
     --out "$FinalApk" `
     "$WorkDir\app-aligned.apk"
 
