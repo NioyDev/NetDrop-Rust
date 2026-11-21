@@ -12,13 +12,17 @@ const ICONO_EMBEBIDO: &[u8] = include_bytes!("../../static/Logo/icono.png");
 
 // Equivale a Generar_QR de Qr_Generator.py
 pub fn generar_qr() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    generar_qr_con_puerto(5000)
+}
+
+pub fn generar_qr_con_puerto(puerto: u16) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let _ = ensure_runtime_dirs();
     let salida = qr_path();
 
     let ip = sacar_ip();
     let es_https = Path::new("cert.crt").exists() && Path::new("cert.key").exists();
     let protocolo = if es_https { "https" } else { "http" };
-    let url = format!("{protocolo}://{ip}:5000/");
+    let url = format!("{protocolo}://{ip}:{puerto}/");
 
     let qr = QrCode::new(url.as_bytes())?;
 

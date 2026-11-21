@@ -79,13 +79,20 @@ public class NetDropServer {
     public synchronized void start() {
         if (isRunning) return;
 
-        try {
-            serverSocket = new ServerSocket(port);
-        } catch (IOException e) {
+        serverSocket = null;
+        for (int candidate = DEFAULT_PORT; candidate <= 5050; candidate++) {
             try {
-                port = 5050;
-                serverSocket = new ServerSocket(port);
-            } catch (IOException e2) {
+                serverSocket = new ServerSocket(candidate);
+                this.port = candidate;
+                break;
+            } catch (IOException ignored) {}
+        }
+
+        if (serverSocket == null) {
+            try {
+                serverSocket = new ServerSocket(0); // Asignación de puerto dinámico por el SO
+                this.port = serverSocket.getLocalPort();
+            } catch (IOException e) {
                 return;
             }
         }
@@ -268,7 +275,12 @@ public class NetDropServer {
                 return;
             }
 
-            // Eliminación de Archivos (/delete/*)
+            // Eliminación de Archivos (/eliminar/*, /delete/*)
+            if (path.startsWith("/eliminar/")) {
+                String filename = path.substring(10);
+                handleDeleteFile(filename, out);
+                return;
+            }
             if (path.startsWith("/delete/")) {
                 String filename = path.substring(8);
                 handleDeleteFile(filename, out);
@@ -282,14 +294,24 @@ public class NetDropServer {
                 return;
             }
 
-            // Descarga de Archivos (/download/*)
+            // Descarga de Archivos (/descarga/*, /download/*)
+            if (path.startsWith("/descarga/")) {
+                String filename = path.substring(10);
+                serveDownload(filename, true, out);
+                return;
+            }
             if (path.startsWith("/download/")) {
                 String filename = path.substring(10);
                 serveDownload(filename, true, out);
                 return;
             }
 
-            // Visualización directa de Archivos (/view/*)
+            // Visualización directa de Archivos (/archivo/*, /view/*)
+            if (path.startsWith("/archivo/")) {
+                String filename = path.substring(9);
+                serveDownload(filename, false, out);
+                return;
+            }
             if (path.startsWith("/view/")) {
                 String filename = path.substring(6);
                 serveDownload(filename, false, out);
@@ -445,21 +467,21 @@ public class NetDropServer {
                     + "                </div>\n"
                     + "            </div>\n"
                     + "        </div>\n"
-                    + "        <div class=\"file-item-actions\">\n"
-                    + "            <button type=\"button\" class=\"btn-action btn-preview\" data-action=\"preview\" data-filename=\"" + escapeHtml(name) + "\" data-type=\"" + ext + "\" title=\"Previsualizar\">\n"
-                    + "                <svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z\"/><circle cx=\"12\" cy=\"12\" r=\"3\"/></svg>\n"
+                    + "        <div class=\"file-actions-bar\">\n"
+                    + "            <button type=\"button\" class=\"btn-action-icon preview\" data-action=\"preview\" data-filename=\"" + escapeHtml(name) + "\" data-type=\"" + ext + "\" title=\"Ver vista previa\">\n"
+                    + "                <svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z\"/><circle cx=\"12\" cy=\"12\" r=\"3\"/></svg>\n"
                     + "                <span>Ver</span>\n"
                     + "            </button>\n"
-                    + "            <button type=\"button\" class=\"btn-action btn-copy\" data-action=\"copy-link\" data-url=\"/download/" + encName + "\" title=\"Copiar enlace de descarga\">\n"
-                    + "                <svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71\"/><path d=\"M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71\"/></svg>\n"
+                    + "            <button type=\"button\" class=\"btn-action-icon copy\" data-action=\"copy-link\" data-filename=\"" + escapeHtml(name) + "\" title=\"Copiar enlace directo\">\n"
+                    + "                <svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71\"/><path d=\"M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71\"/></svg>\n"
                     + "                <span>Copiar</span>\n"
                     + "            </button>\n"
-                    + "            <a href=\"/download/" + encName + "\" class=\"btn-action btn-download\" download title=\"Descargar a este dispositivo\">\n"
-                    + "                <svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4\"/><polyline points=\"7 10 12 15 17 10\"/><line x1=\"12\" y1=\"15\" x2=\"12\" y2=\"3\"/></svg>\n"
+                    + "            <a href=\"/descarga/" + encName + "\" class=\"btn-action-icon download\" title=\"Descargar archivo\">\n"
+                    + "                <svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4\"/><polyline points=\"7 10 12 15 17 10\"/><line x1=\"12\" y1=\"15\" x2=\"12\" y2=\"3\"/></svg>\n"
                     + "                <span>Bajar</span>\n"
                     + "            </a>\n"
-                    + "            <button type=\"button\" class=\"btn-action btn-delete\" data-action=\"open-delete\" data-filename=\"" + escapeHtml(name) + "\" title=\"Eliminar archivo\">\n"
-                    + "                <svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><polyline points=\"3 6 5 6 21 6\"/><path d=\"M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2\"/></svg>\n"
+                    + "            <button type=\"button\" class=\"btn-action-icon delete\" data-action=\"delete-file\" data-filename=\"" + escapeHtml(name) + "\" title=\"Eliminar archivo\">\n"
+                    + "                <svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><polyline points=\"3 6 5 6 21 6\"/><path d=\"M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2\"/></svg>\n"
                     + "            </button>\n"
                     + "        </div>\n"
                     + "    </div>\n"
@@ -480,6 +502,11 @@ public class NetDropServer {
             String qrPage = readAssetString("templates/Qr_Generator.html");
             String content = extractBlock(qrPage, "content");
             String scripts = extractBlock(qrPage, "scripts");
+
+            String ip = getDeviceIp();
+            content = content.replace("{{ protocolo | default(value=\"http\") }}", "http")
+                             .replace("{{ ip_local | default(value=\"127.0.0.1\") }}", ip)
+                             .replace(":5000", ":" + port);
 
             String fullPage = mergeLayout(layout, content, scripts, "/Qr_Generator");
             sendResponse(out, 200, "text/html; charset=UTF-8", fullPage.getBytes(StandardCharsets.UTF_8));
@@ -730,9 +757,10 @@ public class NetDropServer {
                                     .replace("{% block scripts %}\n    {% endblock %}", scripts)
                                     .replace("{% block scripts %}", scripts);
 
-            // Reemplazar IP y protocolo dinámicos
+            // Reemplazar IP, puerto y protocolo dinámicos
             combined = combined.replace("{{ protocolo | default(value=\"http\") }}", "http")
-                               .replace("{{ ip_local | default(value=\"127.0.0.1\") }}", ip);
+                               .replace("{{ ip_local | default(value=\"127.0.0.1\") }}", ip)
+                               .replace(":5000", ":" + port);
 
             // Marcar enlaces activos
             combined = combined.replace("{% if request.path == '/' %}active{% endif %}", "/".equals(activePath) ? "active" : "")

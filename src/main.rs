@@ -9,11 +9,26 @@ use netdrop::app::{
     cert_paths, crear_router, es_https, init_tera, load_initial_settings, load_initial_theme,
     AppState,
 };
-use netdrop::funciones::abrir_navegador::abrir_navegador;
+use netdrop::funciones::abrir_navegador::{abrir_navegador, abrir_navegador_con_puerto};
 use netdrop::funciones::close::esta_cerrado;
 use netdrop::funciones::ip::sacar_ip;
 use netdrop::funciones::paths::ensure_runtime_dirs;
-use netdrop::funciones::qr_generator::generar_qr;
+use netdrop::funciones::qr_generator::generar_qr_con_puerto;
+
+pub fn buscar_puerto_disponible(inicio: u16, fin: u16) -> u16 {
+    for port in inicio..=fin {
+        if let Ok(listener) = std::net::TcpListener::bind(("0.0.0.0", port)) {
+            drop(listener);
+            return port;
+        }
+    }
+    if let Ok(listener) = std::net::TcpListener::bind(("0.0.0.0", 0)) {
+        if let Ok(addr) = listener.local_addr() {
+            return addr.port();
+        }
+    }
+    inicio
+}
 
 // Equivale a arrancar_webview de app.py
 #[cfg(feature = "desktop")]
@@ -35,12 +50,12 @@ pub fn arrancar_webview(proto: &str, shared_state: Arc<AppState>) {
         Ok(w) => w,
         Err(e) => {
             warn!("No se pudo inicializar la ventana nativa: {e}. Abriendo navegador...");
-            abrir_navegador();
+            abrir_navegador_con_puerto(shared_state.puerto);
             return;
         }
     };
 
-    let url = format!("{proto}://127.0.0.1:5000");
+    let url = format!("{proto}://127.0.0.1:{}", shared_state.puerto);
     let _webview = match WebViewBuilder::new()
         .with_url(&url)
         .with_devtools(false)
@@ -50,7 +65,7 @@ pub fn arrancar_webview(proto: &str, shared_state: Arc<AppState>) {
         Ok(wv) => wv,
         Err(e) => {
             warn!("No se pudo crear el WebView: {e}. Abriendo navegador...");
-            abrir_navegador();
+            abrir_navegador_con_puerto(shared_state.puerto);
             return;
         }
     };
@@ -85,7 +100,7 @@ pub fn arrancar_webview(proto: &str, shared_state: Arc<AppState>) {
 // Equivale a arrancar_webview de app.py (Fallback nativo en Windows modo App / navegador sin feature desktop)
 #[cfg(not(feature = "desktop"))]
 pub fn arrancar_webview(proto: &str, shared_state: Arc<AppState>) {
-    let url = format!("{proto}://127.0.0.1:5000");
+    let url = format!("{proto}://127.0.0.1:{}", shared_state.puerto);
 
     let browser_paths = [
         r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe",
@@ -134,7 +149,7 @@ pub fn arrancar_webview(proto: &str, shared_state: Arc<AppState>) {
 
     if !launched {
         println!("Abriendo NetDrop en tu navegador...");
-        abrir_navegador();
+        abrir_navegador_con_puerto(shared_state.puerto);
     }
 }
 
@@ -147,8 +162,9 @@ pub fn ejecutar_servidor(state_for_server: Arc<AppState>) -> std::thread::JoinHa
             .expect("Error creando Tokio runtime");
 
         rt.block_on(async move {
+            let puerto = state_for_server.puerto;
             let app = crear_router(state_for_server);
-            let addr = SocketAddr::from(([0, 0, 0, 0], 5000));
+            let addr = SocketAddr::from(([0, 0, 0, 0], puerto));
 
             #[cfg(feature = "tls")]
             if es_https() {
@@ -170,7 +186,7 @@ pub fn ejecutar_servidor(state_for_server: Arc<AppState>) -> std::thread::JoinHa
             let listener = match tokio::net::TcpListener::bind(addr).await {
                 Ok(l) => l,
                 Err(e) => {
-                    eprintln!("Error enlazando puerto 5000: {e}");
+                    eprintln!("Error enlazando puerto {puerto}: {e}");
                     return;
                 }
             };
@@ -204,11 +220,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let _ = ensure_runtime_dirs();
     let ip_local = sacar_ip();
     let proto = if es_https() { "https" } else { "http" };
+    let puerto = buscar_puerto_disponible(5000, 5050);
 
-    println!("🚀 Iniciando NetDrop en: {proto}://{ip_local}:5000");
+    println!("🚀 Iniciando NetDrop en: {proto}://{ip_local}:{puerto}");
 
-    // Generar el código QR
-    if let Err(e) = generar_qr() {
+    // Generar el código QR con el puerto activo
+    if let Err(e) = generar_qr_con_puerto(puerto) {
         warn!("Aviso: no se pudo pre-generar el QR: {e}");
     }
 
@@ -228,6 +245,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         tera,
         settings,
         theme,
+        puerto,
     });
 
     // 1. Lanzamos el servidor en segundo plano (ejecutar_servidor)
@@ -247,8 +265,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         arrancar_webview(proto, Arc::clone(&app_state));
     } else {
         println!(
-            "Modo headless activado. Servidor activo en http://{}:5000 (Ctrl+C para salir).",
-            ip_local
+            "Modo headless activado. Servidor activo en {proto}://{ip_local}:{puerto} (Ctrl+C para salir)."
         );
     }
 

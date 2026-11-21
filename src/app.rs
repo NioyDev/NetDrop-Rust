@@ -71,6 +71,7 @@ pub struct AppState {
     pub tera: Arc<Tera>,
     pub settings: Arc<RwLock<AppSettings>>,
     pub theme: Arc<RwLock<Option<Value>>>,
+    pub puerto: u16,
 }
 
 // Equivale a add_cache_headers de app.py (con blindaje de seguridad OWASP Top 10)
@@ -194,6 +195,7 @@ pub async fn index(State(state): State<Arc<AppState>>) -> impl IntoResponse {
     let mut ctx = tera::Context::new();
     ctx.insert("File", &files);
     ctx.insert("ip_local", &ip_local);
+    ctx.insert("puerto", &state.puerto);
     ctx.insert("protocolo", &protocolo);
     ctx.insert("request", &json!({ "path": "/" }));
 
@@ -217,6 +219,7 @@ pub async fn settings(State(state): State<Arc<AppState>>) -> impl IntoResponse {
 
     let mut ctx = tera::Context::new();
     ctx.insert("ip_local", &ip_local);
+    ctx.insert("puerto", &state.puerto);
     ctx.insert("protocolo", &protocolo);
     ctx.insert("request", &json!({ "path": "/settings" }));
 
@@ -716,6 +719,7 @@ pub async fn update(State(state): State<Arc<AppState>>) -> impl IntoResponse {
 
     let mut ctx = tera::Context::new();
     ctx.insert("ip_local", &ip_local);
+    ctx.insert("puerto", &state.puerto);
     ctx.insert("protocolo", &protocolo);
     ctx.insert("request", &json!({ "path": "/update" }));
 
@@ -739,6 +743,7 @@ pub async fn qr_generador_vista(State(state): State<Arc<AppState>>) -> impl Into
 
     let mut ctx = tera::Context::new();
     ctx.insert("ip_local", &ip_local);
+    ctx.insert("puerto", &state.puerto);
     ctx.insert("protocolo", &protocolo);
     ctx.insert("request", &json!({ "path": "/qrgenerator" }));
 

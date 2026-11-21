@@ -24,7 +24,7 @@
                 <div class="ip-direct-box">
                     <span class="ip-box-label">Dirección Directa en Red Local:</span>
                     <div class="ip-copy-field">
-                        <code id="ipAddressText">{{ protocolo | default(value="http") }}://{{ ip_local | default(value="127.0.0.1") }}:5000</code>
+                        <code id="ipAddressText">{{ protocolo | default(value="http") }}://{{ ip_local | default(value="127.0.0.1") }}:{{ puerto | default(value=5000) }}</code>
                         <div class="ip-buttons-group">
                             <button type="button" class="btn-copy-small" data-action="copy-ip" title="Copiar IP al portapapeles">Copiar</button>
                             <button type="button" class="btn-share-small" data-action="share-ip" title="Compartir enlace">Compartir</button>

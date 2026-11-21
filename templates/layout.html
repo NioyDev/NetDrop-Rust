@@ -80,7 +80,7 @@
                     <span>Conéctate a la misma red Wi-Fi</span>
                 </div>
                 <div class="ip-copy-box">
-                    <code id="ipAddressText">{{ protocolo | default(value="http") }}://{{ ip_local | default(value="127.0.0.1") }}:5000</code>
+                    <code id="ipAddressText">{{ protocolo | default(value="http") }}://{{ ip_local | default(value="127.0.0.1") }}:{{ puerto | default(value=5000) }}</code>
                     <div class="ip-buttons-group">
                         <button type="button" class="btn-copy-small" data-action="copy-ip" title="Copiar IP">Copiar</button>
                         <button type="button" class="btn-share-small" data-action="share-ip" title="Compartir enlace">Compartir</button>
