@@ -48,6 +48,7 @@ Write-Host "==> 2. Generando R.java y enlazando recursos proto para AAB..." -For
     --version-code 2 `
     --version-name "0.2.0" `
     --java "$WorkDir\gen" `
+    --custom-package "com.nioydev.netdrop" `
     --auto-add-overlay `
     "$WorkDir\compiled_res.zip" `
     -o "$WorkDir\dummy.apk"

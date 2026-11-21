@@ -46,6 +46,7 @@ Write-Host "==> 2. Enlazando paquete con aapt2..." -ForegroundColor Cyan
     --version-code 2 `
     --version-name "0.2.0" `
     --java "$WorkDir\gen" `
+    --custom-package "com.nioydev.netdrop" `
     -o "$WorkDir\app-unaligned.apk" `
     --auto-add-overlay `
     "$WorkDir\compiled_res.zip"
