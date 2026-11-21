@@ -520,8 +520,9 @@ public class NetDropServer {
             String scripts = extractBlock(qrPage, "scripts");
 
             String ip = getDeviceIp();
-            content = content.replace("{{ protocolo | default(value=\"http\") }}", "http")
-                             .replace("{{ ip_local | default(value=\"127.0.0.1\") }}", ip)
+            content = content.replaceAll("\\{\\{\\s*protocolo[^}]*\\}\\}", "http")
+                             .replaceAll("\\{\\{\\s*ip_local[^}]*\\}\\}", ip)
+                             .replaceAll("\\{\\{\\s*puerto[^}]*\\}\\}", String.valueOf(port))
                              .replace(":5000", ":" + port);
 
             String fullPage = mergeLayout(layout, content, scripts, "/Qr_Generator");
@@ -865,8 +866,9 @@ public class NetDropServer {
                                     .replace("{% block scripts %}", scripts);
 
             // Reemplazar IP, puerto y protocolo dinámicos
-            combined = combined.replace("{{ protocolo | default(value=\"http\") }}", "http")
-                               .replace("{{ ip_local | default(value=\"127.0.0.1\") }}", ip)
+            combined = combined.replaceAll("\\{\\{\\s*protocolo[^}]*\\}\\}", "http")
+                               .replaceAll("\\{\\{\\s*ip_local[^}]*\\}\\}", ip)
+                               .replaceAll("\\{\\{\\s*puerto[^}]*\\}\\}", String.valueOf(port))
                                .replace(":5000", ":" + port);
 
             // Marcar enlaces activos
