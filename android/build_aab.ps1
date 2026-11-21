@@ -45,8 +45,8 @@ Write-Host "==> 2. Generando R.java y enlazando recursos proto para AAB..." -For
     --manifest "$Manifest" `
     --min-sdk-version 24 `
     --target-sdk-version 36 `
-    --version-code 5 `
-    --version-name "0.3.0" `
+    --version-code 6 `
+    --version-name "0.3.1" `
     --java "$WorkDir\gen" `
     --custom-package "com.nioydev.netdrop" `
     --auto-add-overlay `
@@ -59,8 +59,8 @@ Write-Host "==> 2. Generando R.java y enlazando recursos proto para AAB..." -For
     --manifest "$Manifest" `
     --min-sdk-version 24 `
     --target-sdk-version 36 `
-    --version-code 5 `
-    --version-name "0.3.0" `
+    --version-code 6 `
+    --version-name "0.3.1" `
     --proto-format `
     --auto-add-overlay `
     "$WorkDir\compiled_res.zip" `
@@ -70,11 +70,23 @@ Write-Host "==> 3. Compilando código Java con javac (JDK 17)..." -ForegroundCol
 $Sources = Get-ChildItem -Path "$WorkDir\gen", "$JavaSrc" -Filter "*.java" -Recurse | Select-Object -ExpandProperty FullName
 & "$JavaBin\javac.exe" -encoding UTF-8 -cp "$AndroidJar" -d "$WorkDir\classes" $Sources
 
-Write-Host "==> 4. Generando bytecode Dalvik (classes.dex) con d8..." -ForegroundColor Cyan
+Write-Host "==> 4. Optimizando código con R8 y generando DEX + mapping..." -ForegroundColor Cyan
 $ClassFiles = Get-ChildItem -Path "$WorkDir\classes" -Filter "*.class" -Recurse | Select-Object -ExpandProperty FullName
-$env:JAVA_HOME = "$SdkPath\jdk-17"
-$env:PATH = "$JavaBin;$env:PATH"
-& "$BuildTools\d8.bat" --lib "$AndroidJar" --output "$WorkDir\dex" $ClassFiles
+$ProguardRules = "$PSScriptRoot\proguard-rules.pro"
+$MappingFile = "$WorkDir\mapping.txt"
+
+& "$JavaBin\java.exe" -cp "$BuildTools\lib\d8.jar" com.android.tools.r8.R8 `
+    --release `
+    --min-api 24 `
+    --lib "$AndroidJar" `
+    --pg-conf "$ProguardRules" `
+    --pg-map-output "$MappingFile" `
+    --output "$WorkDir\dex" `
+    $ClassFiles
+
+if (Test-Path $MappingFile) {
+    Copy-Item $MappingFile "$OutputDir\mapping.txt" -Force
+}
 
 Write-Host "==> 5. Estructurando módulo base para bundletool..." -ForegroundColor Cyan
 Expand-Archive -Path "$WorkDir\base_linked.zip" -DestinationPath "$WorkDir\base_extracted" -Force
@@ -105,7 +117,16 @@ Set-Location $PSScriptRoot
 
 Write-Host "==> 6. Construyendo Android App Bundle (.aab) con bundletool..." -ForegroundColor Cyan
 $UnsignedAab = "$WorkDir\NetDrop-unsigned.aab"
-& "$JavaBin\java.exe" -jar "$Bundletool" build-bundle --modules="$WorkDir\base.zip" --output="$UnsignedAab"
+if (Test-Path $MappingFile) {
+    & "$JavaBin\java.exe" -jar "$Bundletool" build-bundle `
+        --modules="$WorkDir\base.zip" `
+        --metadata-file="com.android.tools.build.obfuscation/proguard.map:$MappingFile" `
+        --output="$UnsignedAab"
+} else {
+    & "$JavaBin\java.exe" -jar "$Bundletool" build-bundle `
+        --modules="$WorkDir\base.zip" `
+        --output="$UnsignedAab"
+}
 
 Write-Host "==> 7. Firmando AAB en Modo Lanzamiento (Release) con jarsigner..." -ForegroundColor Cyan
 $FinalAab = "$OutputDir\NetDrop-Android.aab"
