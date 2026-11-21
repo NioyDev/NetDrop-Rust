@@ -181,19 +181,46 @@
 
 .ip-copy-field {
     display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
 }
 
 .ip-copy-field code {
     font-family: var(--font-mono);
-    font-size: 14px;
+    font-size: 13px;
     font-weight: 600;
     color: var(--color-accent);
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    text-align: center;
+    word-break: break-all;
+    overflow-wrap: anywhere;
+    white-space: normal;
+    padding: 10px 12px;
+    background: var(--color-bg-base);
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    box-sizing: border-box;
+}
+
+.ip-copy-field .ip-buttons-group {
+    display: flex;
+    gap: 8px;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.ip-copy-field .ip-buttons-group .btn-copy-small,
+.ip-copy-field .ip-buttons-group .btn-share-small {
+    flex: 1;
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    box-sizing: border-box;
 }
 
 .qr-instructions-list {
@@ -579,4 +606,147 @@ input:checked + .toggle-slider {
 
 input:checked + .toggle-slider:before {
     transform: translateX(22px);
+}
+
+/* ==========================================================================
+   ADAPTACIONES RESPONSIVAS MOBILE-FIRST (SkillNexthezia / Android)
+   Eliminación total de scroll horizontal y ajuste en pantallas de 360px a 430px
+   ========================================================================== */
+
+@media (max-width: 640px) {
+    /* Barra de Pestañas de Ajustes: Estilo segmentado en cuadrícula 3-col */
+    .settings-tabs-bar {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 4px;
+        padding: 4px;
+        background: var(--color-surface);
+        border: 1px solid var(--color-border);
+        border-radius: 12px;
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+        margin-bottom: 20px;
+    }
+
+    .settings-tab-btn {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 3px;
+        padding: 8px 2px;
+        font-size: 11px;
+        font-weight: 600;
+        text-align: center;
+        min-height: 50px;
+        width: 100%;
+        box-sizing: border-box;
+        border-radius: 8px;
+    }
+
+    .settings-tab-btn svg {
+        width: 18px;
+        height: 18px;
+    }
+
+    /* Grilla de Temas a 1 columna en móvil */
+    .theme-grid {
+        grid-template-columns: 1fr !important;
+        gap: 12px !important;
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    .theme-card {
+        padding: 14px;
+        box-sizing: border-box;
+    }
+
+    /* Editor JSON en Ajustes */
+    .json-editor-card {
+        padding: 14px 12px !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
+    }
+
+    .json-textarea {
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+        font-size: 11px !important;
+    }
+
+    .json-actions {
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 8px !important;
+        width: 100% !important;
+    }
+
+    .json-actions button {
+        width: 100% !important;
+        min-height: 44px !important;
+        justify-content: center !important;
+        box-sizing: border-box !important;
+    }
+
+    /* Filas de Configuración / Toggles */
+    .setting-row-card {
+        padding: 14px !important;
+        gap: 12px !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
+    }
+
+    .setting-info {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .setting-help {
+        word-break: break-word;
+        overflow-wrap: anywhere;
+    }
+
+    /* QR Generator Card & Botones */
+    .qr-page-card {
+        padding: 16px !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
+    }
+
+    .qr-img-frame {
+        width: 200px !important;
+        height: 200px !important;
+        margin: 0 auto !important;
+    }
+
+    .qr-main-layout {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 20px !important;
+        width: 100% !important;
+    }
+
+    .qr-meta-box {
+        width: 100% !important;
+        box-sizing: border-box !important;
+    }
+
+    .qr-actions-row {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 8px !important;
+        width: 100% !important;
+    }
+
+    .qr-actions-row a {
+        width: 100% !important;
+        min-height: 44px !important;
+        justify-content: center !important;
+        text-align: center !important;
+        box-sizing: border-box !important;
+    }
 }
