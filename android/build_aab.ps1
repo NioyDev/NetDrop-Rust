@@ -10,7 +10,7 @@ param (
 $ErrorActionPreference = "Stop"
 
 $BuildTools = "$SdkPath\build-tools\34.0.0"
-$AndroidJar = "$SdkPath\platforms\android-34\android.jar"
+$AndroidJar = if (Test-Path "$SdkPath\platforms\android-36\android.jar") { "$SdkPath\platforms\android-36\android.jar" } else { "$SdkPath\platforms\android-34\android.jar" }
 $JavaBin = "$SdkPath\jdk-17\bin"
 if (-not (Test-Path $Keystore)) {
     if (Test-Path "$SdkPath\netdrop-release.keystore") {
@@ -44,8 +44,8 @@ Write-Host "==> 2. Generando R.java y enlazando recursos proto para AAB..." -For
     -I "$AndroidJar" `
     --manifest "$Manifest" `
     --min-sdk-version 24 `
-    --target-sdk-version 34 `
-    --version-code 2 `
+    --target-sdk-version 36 `
+    --version-code 3 `
     --version-name "0.2.0" `
     --java "$WorkDir\gen" `
     --custom-package "com.nioydev.netdrop" `
@@ -58,8 +58,8 @@ Write-Host "==> 2. Generando R.java y enlazando recursos proto para AAB..." -For
     -I "$AndroidJar" `
     --manifest "$Manifest" `
     --min-sdk-version 24 `
-    --target-sdk-version 34 `
-    --version-code 2 `
+    --target-sdk-version 36 `
+    --version-code 3 `
     --version-name "0.2.0" `
     --proto-format `
     --auto-add-overlay `

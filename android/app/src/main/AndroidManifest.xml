@@ -4,7 +4,7 @@
 
     <uses-sdk
         android:minSdkVersion="24"
-        android:targetSdkVersion="34" />
+        android:targetSdkVersion="36" />
 
     <!-- Permisos de red e Internet para conexión local -->
     <uses-permission android:name="android.permission.INTERNET" />
